@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# MLOps & Tracking
+mlruns/
+.dvc/
+! .dvc/config
+
+# Large training artifacts - DO NOT COMMIT
+wandb/
+archive_datasets/
+
+# Data & Models (large binary files - use DVC or Google Drive)
+data/*
+!data/.gitkeep
+models/*
+!models/.gitkeep
+
+# Kaggle credentials
+.kaggle/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Large office files
+*.pptx
+*.vsix

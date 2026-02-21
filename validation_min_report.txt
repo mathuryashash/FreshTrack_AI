@@ -1,0 +1,7 @@
+              Count  Accuracy  Avg_Shelf
+Fruit                                   
+Bitter_Gourd     10       1.0   6.965024
+Capsicum         10       1.0   6.866204
+Cucumber         10       1.0   6.999357
+
+Total Acc: 100.00%
