@@ -1,6 +1,7 @@
+import os
 import requests
 
-api_key = "af8e9a06dc13348a75cba40abcda6a65"
+api_key = os.environ.get("OPENWEATHERMAP_API_KEY", "")
 cities = ["delhi", "Delhi", "Delhi,IN", "New Delhi"]
 
 print(f"Testing API Key: {api_key}")

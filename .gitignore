@@ -11,21 +11,49 @@ ENV/
 
 # MLOps & Tracking
 mlruns/
-.dvc/
-! .dvc/config
-
-# Large training artifacts - DO NOT COMMIT
 wandb/
+.dvc/
+
+# Data & Models (large binary files - hosted on Hugging Face Hub)
+data/
+models/
 archive_datasets/
 
-# Data & Models (large binary files - use DVC or Google Drive)
-data/*
-!data/.gitkeep
-models/*
-!models/.gitkeep
+# Training/Dev-only files (not needed for app deployment)
+notebooks/
+scripts/
+tests/
+docs/
+.github/
+
+# Internal agent/AI assistant files
+.agents/
+
+# Local-only scripts and internal docs
+cleanup_root.py
+download_skills.py
+freshtrack_ai_prd.md
+freshtrack_workflow.md
+freshtrack_workflow.md
+progress.txt
+run_backend.bat
+run_mobile_app.bat
+run_prediction.bat
+run_ui.bat
+validation_min_report.txt
+validation_report.txt
+upload_model_to_hf.py
+_hf_upload_temp.py
+PRD.md
+.dockerignore
+requirements.txt
 
 # Kaggle credentials
 .kaggle/
+
+# Environment variables
+.env
+.env.local
 
 # OS
 .DS_Store

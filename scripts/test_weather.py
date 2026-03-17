@@ -1,6 +1,7 @@
+import os
 import requests
 
-api_key = "af8e9a06dc13348a75cba40abcda6a65"
+api_key = os.environ.get("OPENWEATHERMAP_API_KEY", "")
 cities_to_test = ["Bengaluru", "Bangalore", "Bengaluru,IN", "Mumbai", "London"]
 
 for city in cities_to_test:
