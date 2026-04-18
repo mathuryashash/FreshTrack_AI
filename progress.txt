@@ -1,8 +1,0 @@
-M1: Initial Project Structure Setup (Directories, README, .gitignore, requirements.txt) - COMPLETED
-M2: Model Development & Training (Implemented MultiTaskFruitModel, FruitDataset, training pipeline with validation/MLflow, and evaluation script) - COMPLETED
-M3: MLOps Pipeline Implementation (Implemented FastAPI backend, Dockerfile, GitHub Actions CI/CD, and basic API tests) - COMPLETED
-M4: Deployment & Monitoring (Implemented Streamlit frontend, Evidently AI drift monitoring, user feedback loop, and Grad-CAM explainability) - COMPLETED
-M5: Polish & Documentation (Created Model Card, Demo Video Guide, and Resume-ready project highlights in README) - COMPLETED
-
-----------
-ralph-done-ctm6m

@@ -6,6 +6,14 @@ import albumentations as A
 from albumentations.pytorch import ToTensorV2
 import numpy as np
 
+from src.config import (
+    FRESHNESS_TO_IDX,
+    QUALITY_TO_IDX,
+    NORMALIZE_MEAN,
+    NORMALIZE_STD,
+    IMAGE_SIZE,
+)
+
 
 class FruitDataset(Dataset):
     def __init__(self, metadata_file, transform=None, split="train"):
@@ -21,10 +29,6 @@ class FruitDataset(Dataset):
         # Filter by split
         self.data = [item for item in self.metadata if item.get("split") == split]
         self.transform = transform
-
-        # Class mappings
-        self.freshness_to_idx = {"Fresh": 0, "Semi-ripe": 1, "Overripe": 2, "Rotten": 3}
-        self.quality_to_idx = {"A": 0, "B": 1, "C": 2}
 
     def __len__(self):
         return len(self.data)
@@ -47,10 +51,9 @@ class FruitDataset(Dataset):
             augmented = self.transform(image=image)
             image = augmented["image"]
 
-        # Prepare labels
-        # Map labels to indices, defaulting if not found
-        freshness_label = self.freshness_to_idx.get(item["freshness"], 0)
-        quality_label = self.quality_to_idx.get(item["quality"], 1)
+        # Prepare labels - use config mappings
+        freshness_label = FRESHNESS_TO_IDX.get(item["freshness"], 0)
+        quality_label = QUALITY_TO_IDX.get(item["quality"], 1)
 
         # Rotation: 0=0°, 1=90°, 2=180°, 3=270° (derived from image filename if available)
         rotation_label = int(item.get("rotation", 0)) % 4
@@ -69,13 +72,23 @@ class FruitDataset(Dataset):
 def get_train_transforms():
     return A.Compose(
         [
-            A.RandomResizedCrop(size=(224, 224), scale=(0.8, 1.0)),
+            A.RandomResizedCrop(size=(IMAGE_SIZE, IMAGE_SIZE), scale=(0.8, 1.0)),
             A.HorizontalFlip(p=0.5),
             A.VerticalFlip(p=0.3),
             A.RandomRotate90(p=0.5),
             A.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1, p=0.5),
             A.GaussNoise(p=0.2),
-            A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            A.CoarseDropout(
+                max_holes=4,
+                max_height=32,
+                max_width=32,
+                min_holes=1,
+                min_height=8,
+                min_width=8,
+                fill_value=0,
+                p=0.3,
+            ),
+            A.Normalize(mean=NORMALIZE_MEAN, std=NORMALIZE_STD),
             ToTensorV2(),
         ]
     )
@@ -84,8 +97,8 @@ def get_train_transforms():
 def get_val_transforms():
     return A.Compose(
         [
-            A.Resize(height=224, width=224),
-            A.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+            A.Resize(height=IMAGE_SIZE, width=IMAGE_SIZE),
+            A.Normalize(mean=NORMALIZE_MEAN, std=NORMALIZE_STD),
             ToTensorV2(),
         ]
     )

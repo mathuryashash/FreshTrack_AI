@@ -32,6 +32,10 @@ class GradCAM:
             input_tensor: Preprocessed image tensor (B, C, H, W)
             class_idx: Target class index (defaults to predicted class)
             task: One of 'freshness', 'quality', 'shelf_life', 'rotation'
+
+        Note: target_layer must be a convolutional layer that outputs a spatial
+        feature map (B, C, H, W). Do NOT pass the full backbone with global_pool
+        enabled — use model.backbone.blocks[-1] instead.
         """
         task_index = {"freshness": 0, "quality": 1, "shelf_life": 2, "rotation": 3}
         idx = task_index.get(task, 0)
@@ -55,6 +59,13 @@ class GradCAM:
 
         gradients = self.gradients.detach().cpu().numpy()[0]
         activations = self.activations.detach().cpu().numpy()[0]
+
+        # Grad-CAM requires spatial (C, H, W) feature maps
+        if gradients.ndim != 3 or activations.ndim != 3:
+            raise ValueError(
+                "Grad-CAM target layer must output a spatial (C, H, W) feature map. "
+                "Use model.backbone.blocks[-1] instead of model.backbone."
+            )
 
         weights = np.mean(gradients, axis=(1, 2))
         heatmap = np.zeros(activations.shape[1:], dtype=np.float32)
