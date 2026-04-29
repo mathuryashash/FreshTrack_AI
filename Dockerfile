@@ -4,11 +4,15 @@ FROM python:3.9-slim
 # Set working directory
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies with retry mechanism
 RUN apt-get update --fix-missing && apt-get install -y --no-install-recommends \
     build-essential \
     libgl1-mesa-glx \
     libglib2.0-0 \
+    || (sleep 10 && apt-get update --fix-missing && apt-get install -y --no-install-recommends \
+    build-essential \
+    libgl1-mesa-glx \
+    libglib2.0-0) \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy production requirements and install (faster builds, no ML training deps)
