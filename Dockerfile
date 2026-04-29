@@ -25,6 +25,9 @@ COPY src/ ./src/
 COPY models/ ./models/
 COPY download_model.py .
 
+# Create models directory with proper permissions for model downloads
+RUN mkdir -p models/checkpoints && chown -R appuser:appgroup models
+
 # Download model if not present, then start server
 RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
 USER appuser
