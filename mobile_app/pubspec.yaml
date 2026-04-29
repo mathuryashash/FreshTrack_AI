@@ -13,7 +13,8 @@ dependencies:
   # Networking
   http: ^1.2.0
 
-  # Image
+  # Camera & Image
+  camera: ^0.10.5+5
   image_picker: ^1.0.7
   flutter_image_compress: ^2.1.0
 

@@ -310,46 +310,53 @@ def generate_gradcam(model, image_tensor, device):
 
     gradients = None
     activations = None
+    handle_forward = None
+    handle_backward = None
 
     def forward_hook(module, input, output):
         nonlocal activations
-        activations = output
+        activations = output.detach()
 
     def backward_hook(module, grad_input, grad_output):
         nonlocal gradients
-        gradients = grad_output[0]
+        gradients = grad_output[0].detach()
 
-    handle_forward = target_layer.register_forward_hook(forward_hook)
-    handle_backward = target_layer.register_full_backward_hook(backward_hook)
+    try:
+        handle_forward = target_layer.register_forward_hook(forward_hook)
+        handle_backward = target_layer.register_full_backward_hook(backward_hook)
 
-    image_tensor = image_tensor.clone().requires_grad_(True)
-    output = model(image_tensor)
+        image_tensor = image_tensor.clone().to(device).requires_grad_(True)
+        output = model(image_tensor)
 
-    if isinstance(output, tuple):
-        freshness_logits = output[0]
-    else:
-        freshness_logits = output
+        if isinstance(output, tuple):
+            freshness_logits = output[0]
+        else:
+            freshness_logits = output
 
-    class_idx = torch.argmax(freshness_logits, dim=1).item()
-    model.zero_grad()
-    loss = freshness_logits[0, class_idx]
-    loss.backward()
+        class_idx = torch.argmax(freshness_logits, dim=1).item()
+        model.zero_grad()
+        loss = freshness_logits[0, class_idx]
+        loss.backward()
 
-    handle_forward.remove()
-    handle_backward.remove()
+    finally:
+        # Always remove hooks to prevent memory leaks
+        if handle_forward is not None:
+            handle_forward.remove()
+        if handle_backward is not None:
+            handle_backward.remove()
 
     if gradients is None or activations is None:
-        return None, class_idx
+        return None, class_idx if "class_idx" in locals() else 0
 
-    grad_np = gradients.detach().cpu().numpy()[0]   # (C, H, W)
-    act_np  = activations.detach().cpu().numpy()[0]  # (C, H, W)
+    grad_np = gradients.detach().cpu().numpy()[0]  # (C, H, W)
+    act_np = activations.detach().cpu().numpy()[0]  # (C, H, W)
 
     # Guard: must be 3-D (C, H, W) for spatial Grad-CAM
     if grad_np.ndim != 3 or act_np.ndim != 3:
         return None, class_idx
 
-    weights  = np.mean(grad_np, axis=(1, 2))         # (C,)
-    heatmap  = np.zeros(act_np.shape[1:], dtype=np.float32)  # (H, W)
+    weights = np.mean(grad_np, axis=(1, 2))  # (C,)
+    heatmap = np.zeros(act_np.shape[1:], dtype=np.float32)  # (H, W)
 
     for i, w in enumerate(weights):
         heatmap += w * act_np[i]

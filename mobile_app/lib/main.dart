@@ -53,7 +53,7 @@ class FreshTrackApp extends StatelessWidget {
         outline: border,
       ),
       textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: card,
         elevation: 0,
         shape: RoundedRectangleBorder(

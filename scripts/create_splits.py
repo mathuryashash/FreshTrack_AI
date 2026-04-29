@@ -1,6 +1,7 @@
 
 import json
 import random
+import hashlib
 import os
 import sys
 # Add project root to path
@@ -8,9 +9,16 @@ sys.path.append(os.getcwd())
 
 from pathlib import Path
 
-def create_splits(metadata_file, train_ratio=0.7, val_ratio=0.15, test_ratio=0.15):
+def create_splits(metadata_file, train_ratio=0.7, val_ratio=0.15, test_ratio=0.15, seed=None):
     """
-    Split dataset into train/val/test with stratification
+    Split dataset into train/val/test with stratification.
+    
+    Args:
+        metadata_file: Path to metadata JSON file
+        train_ratio: Training split ratio (default 0.7)
+        val_ratio: Validation split ratio (default 0.15)  
+        test_ratio: Test split ratio (default 0.15)
+        seed: Random seed for deterministic splits. If None, auto-derived from metadata.
     """
     if not os.path.exists(metadata_file):
         print(f"Error: {metadata_file} not found")
@@ -18,6 +26,15 @@ def create_splits(metadata_file, train_ratio=0.7, val_ratio=0.15, test_ratio=0.1
 
     with open(metadata_file, 'r') as f:
         metadata = json.load(f)
+    
+    # Set random seed for reproducibility
+    if seed is None:
+        # Derive deterministic seed from metadata content
+        content_str = json.dumps(metadata, sort_keys=True)
+        seed = int(hashlib.md5(content_str.encode()).hexdigest()[:8], 16)
+    
+    random.seed(seed)
+    print(f"Using random seed: {seed} for deterministic splits")
     
     # Group by freshness for stratification
     freshness_groups = {}

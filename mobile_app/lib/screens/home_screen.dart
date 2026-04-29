@@ -6,7 +6,8 @@ import '../models/prediction_result.dart';
 import '../services/api_service.dart';
 import '../services/database_service.dart';
 import '../widgets/result_card.dart';
-import '../widgets/freshness_badge.dart';
+import 'camera_scan_screen.dart';
+import 'result_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -26,24 +27,47 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   PredictionResult? _result;
   bool _loading = false;
   String? _error;
+  bool _showOodPopup = false; // For OOD (Object Not Recognized) fun pop-up
 
   Future<void> _pick(ImageSource source) async {
-    final picked = await _picker.pickImage(source: source, imageQuality: 90);
-    if (picked == null || !mounted) return;
-
-    setState(() {
-      _image = File(picked.path);
-      _result = null;
-      _error = null;
-    });
-    await _analyze(File(picked.path));
+    if (source == ImageSource.camera) {
+      final file = await Navigator.push<File>(
+        context,
+        MaterialPageRoute(builder: (_) => const CameraScanScreen()),
+      );
+      if (file == null || !mounted) return;
+      setState(() {
+        _image = file;
+        _result = null;
+        _error = null;
+      });
+      await _analyze(file);
+    } else {
+      final picked = await _picker.pickImage(source: source, imageQuality: 90);
+      if (picked == null || !mounted) return;
+      setState(() {
+        _image = File(picked.path);
+        _result = null;
+        _error = null;
+      });
+      await _analyze(File(picked.path));
+    }
   }
 
   Future<void> _analyze(File file) async {
-    setState(() { _loading = true; _error = null; });
+    setState(() { _loading = true; _error = null; _showOodPopup = false; });
     try {
       final json = await _api.predict(file);
       if (!mounted) return;
+      
+      // Check for OOD (Object Not Recognized) response
+      if (json.containsKey('error') && 
+          (json['error'] == 'OBJECT_NOT_RECOGNIZED' || 
+           (json['error'] is Map && json['error']['code'] == 'OBJECT_NOT_RECOGNIZED'))) {
+        setState(() { _loading = false; _showOodPopup = true; });
+        return;
+      }
+      
       final result = PredictionResult.fromJson(json, imagePath: file.path);
       await DatabaseService.insert(result);
       setState(() { _result = result; });
@@ -56,7 +80,7 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
     }
   }
 
-  void _reset() => setState(() { _image = null; _result = null; _error = null; });
+  void _reset() => setState(() { _image = null; _result = null; _error = null; _showOodPopup = false; });
 
   @override
   Widget build(BuildContext context) {
@@ -99,10 +123,20 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
                 enabled: !_loading,
               ),
               const SizedBox(height: 28),
+              if (_showOodPopup)
+                Center(
+                  child: _OodPopup(onRetry: _reset),
+                ),
               if (_loading) const _LoadingState(),
-              if (_error != null) _ErrorCard(message: _error!),
-              if (_result != null && !_loading)
-                ResultCard(result: _result!),
+              if (_error != null && !_showOodPopup) _ErrorCard(message: _error!),
+              if (_result != null && !_loading && !_showOodPopup)
+                GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => ResultScreen(result: _result!)),
+                  ),
+                  child: ResultCard(result: _result!),
+                ),
             ],
           ),
         ),
@@ -333,6 +367,137 @@ class _ErrorCard extends StatelessWidget {
         const SizedBox(width: 12),
         Expanded(child: Text(message, style: const TextStyle(color: Colors.redAccent, fontSize: 13))),
       ]),
+    );
+  }
+}
+
+// Fun OOD (Object Not Recognized) Pop-up Widget
+class _OodPopup extends StatefulWidget {
+  final VoidCallback onRetry;
+  const _OodPopup({required this.onRetry});
+
+  @override
+  State<_OodPopup> createState() => _OodPopupState();
+}
+
+class _OodPopupState extends State<_OodPopup> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _fadeAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.elasticOut),
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
+    );
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, child) {
+        return Opacity(
+          opacity: _fadeAnimation.value,
+          child: Transform.scale(
+            scale: _scaleAnimation.value,
+            child: child,
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFF4A148C), Color(0xFF7B1FA2)],
+          ),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.purple.withOpacity(0.4),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Emoji header
+            const Text(
+              '🍌🍎🍊',
+              style: TextStyle(fontSize: 48),
+            ),
+            const SizedBox(height: 16),
+            // Fun title
+            const Text(
+              'Oops! 🤔',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 8),
+            // Message
+            const Text(
+              "That's not a fruit!",
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              "We're detecting something else...\nTry with a fruit or vegetable!",
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 20),
+            // Retry button
+            ElevatedButton.icon(
+              onPressed: widget.onRetry,
+              icon: const Icon(Icons.camera_alt, color: Colors.white),
+              label: const Text(
+                'Try Again 📸',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.purple.shade700,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

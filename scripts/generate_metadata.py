@@ -1,7 +1,27 @@
 import os
 import json
 import argparse
-import random
+import hashlib
+
+
+def deterministic_split(file_path: str, split_ratios=(0.8, 0.1, 0.1)):
+    """Deterministic split using SHA-256 hash of file path.
+    
+    The same file path always maps to the same split, making
+    experiments fully reproducible across runs.
+    """
+    hash_bytes = hashlib.sha256(file_path.encode()).digest()
+    # Use first 4 bytes of hash as a seed value in [0, 1)
+    rand = int.from_bytes(hash_bytes[:4], 'big') / (2**32)
+
+    cumulative = 0.0
+    splits = ['train', 'val', 'test']
+    for i, ratio in enumerate(split_ratios):
+        cumulative += ratio
+        if rand < cumulative:
+            return splits[i]
+    return splits[-1]  # fallback (rounding edge case)
+
 
 def generate_metadata(data_dir, output_file):
     metadata = []
@@ -39,11 +59,8 @@ def generate_metadata(data_dir, output_file):
                 # Heuristic for Shelf Life
                 shelf_life = 7.0 if freshness == "Fresh" else 0.0 if freshness == "Rotten" else 3.0
                 
-                # Random split
-                r = random.random()
-                if r < 0.8: split = 'train'
-                elif r < 0.9: split = 'val'
-                else: split = 'test'
+                # Deterministic split based on file path hash
+                split = deterministic_split(rel_path)
                 
                 entry = {
                     "image_path": rel_path,

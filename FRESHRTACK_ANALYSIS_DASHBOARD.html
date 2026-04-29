@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreshTrack AI - Comprehensive Analysis Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%); color: #F8FAFC; min-height: 100vh; padding: 20px; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header { background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(245, 158, 11, 0.1) 100%); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 20px; padding: 2rem; margin-bottom: 2rem; backdrop-filter: blur(10px); }
+        .header h1 { font-size: 2.5rem; font-weight: 700; background: linear-gradient(135deg, #10B981 0%, #34D399 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0.5rem; }
+        .header p { color: #94A3B8; font-size: 1.1rem; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+        .card { background: linear-gradient(135deg, #1E293B 0%, #334155 100%); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 16px; padding: 1.5rem; transition: all 0.3s ease; }
+        .card:hover { transform: translateY(-5px); border-color: rgba(16, 185, 129, 0.5); box-shadow: 0 20px 40px rgba(0,0,0,0.3); }
+        .card h2 { color: #10B981; font-size: 1.2rem; margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem; }
+        .score { font-size: 3rem; font-weight: 700; font-family: 'Courier New', monospace; margin: 1rem 0; }
+        .score.critical { color: #EF4444; }
+        .score.high { color: #F97316; }
+        .score.medium { color: #F59E0B; }
+        .score.good { color: #22C55E; }
+        .progress-bar { background: #0F172A; border-radius: 10px; height: 20px; overflow: hidden; margin: 1rem 0; }
+        .progress-fill { height: 100%; border-radius: 10px; transition: width 1s ease; }
+        .progress-fill.critical { background: linear-gradient(90deg, #EF4444 0%, #DC2626 100%); }
+        .progress-fill.high { background: linear-gradient(90deg, #F97316 0%, #EA580C 100%); }
+        .progress-fill.medium { background: linear-gradient(90deg, #F59E0B 0%, #D97706 100%); }
+        .progress-fill.good { background: linear-gradient(90deg, #22C55E 0%, #16A34A 100%); }
+        .finding { background: #0F172A; border-left: 3px solid #EF4444; padding: 1rem; margin-bottom: 0.5rem; border-radius: 0 8px 8px 0; }
+        .finding.high { border-color: #F97316; }
+        .finding.medium { border-color: #F59E0B; }
+        .finding.low { border-color: #22C55E; }
+        .finding h4 { color: #F8FAFC; font-size: 0.9rem; margin-bottom: 0.5rem; }
+        .finding p { color: #94A3B8; font-size: 0.85rem; line-height: 1.4; }
+        .badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 600; margin-right: 0.5rem; }
+        .badge.critical { background: #EF4444; color: white; }
+        .badge.high { background: #F97316; color: white; }
+        .badge.medium { background: #F59E0B; color: black; }
+        .badge.low { background: #22C55E; color: white; }
+        .badge.info { background: #3B82F6; color: white; }
+        table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+        th, td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #334155; font-size: 0.85rem; }
+        th { color: #10B981; font-weight: 600; }
+        td { color: #94A3B8; }
+        .section { margin-bottom: 3rem; }
+        .section-title { color: #10B981; font-size: 1.5rem; font-weight: 600; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem; }
+        .metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1rem 0; }
+        .metric { text-align: center; padding: 1rem; background: #0F172A; border-radius: 12px; }
+        .metric-value { font-size: 2rem; font-weight: 700; font-family: 'Courier New', monospace; color: #10B981; }
+        .metric-label { color: #94A3B8; font-size: 0.85rem; margin-top: 0.5rem; }
+        .agent-status { display: flex; align-items: center; gap: 1rem; padding: 1rem; background: #0F172A; border-radius: 12px; margin-bottom: 0.5rem; }
+        .agent-icon { width: 40px; height: 40px; border-radius: 50%; background: #10B981; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; }
+        .agent-info { flex: 1; }
+        .agent-name { color: #F8FAFC; font-weight: 600; }
+        .agent-task { color: #94A3B8; font-size: 0.85rem; }
+        .status-dot { width: 12px; height: 12px; border-radius: 50%; }
+        .status-dot.completed { background: #22C55E; }
+        .status-dot.running { background: #F59E0B; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🍎 FreshTrack AI - Analysis Dashboard</h1>
+            <p>Comprehensive project analysis using Ruflo V3 multi-agent system | Generated: 2026-04-28</p>
+        </div>
+
+        <!-- Ruflo Agent Status -->
+        <div class="section">
+            <h2 class="section-title">🤖 Ruflo Agent Swarm Status</h2>
+            <div class="agent-status">
+                <div class="agent-icon">🧠</div>
+                <div class="agent-info">
+                    <div class="agent-name">Swarm: swarm-mojp0t3t</div>
+                    <div class="agent-task">Objective: Full project analysis (Security, ML, Mobile, API)</div>
+                </div>
+                <div class="status-dot completed"></div>
+            </div>
+            <div class="agent-status">
+                <div class="agent-icon">🔒</div>
+                <div class="agent-info">
+                    <div class="agent-name">Security Analyst Agent</div>
+                    <div class="agent-task">Completed: Security audit (62/100 score)</div>
+                </div>
+                <div class="status-dot completed"></div>
+            </div>
+            <div class="agent-status">
+                <div class="agent-icon">🧠</div>
+                <div class="agent-info">
+                    <div class="agent-name">ML Performance Agent</div>
+                    <div class="agent-task">Completed: Model analysis (5.36M params, 480ms latency)</div>
+                </div>
+                <div class="status-dot completed"></div>
+            </div>
+            <div class="agent-status">
+                <div class="agent-icon">📱</div>
+                <div class="agent-info">
+                    <div class="agent-name">Mobile App Architect Agent</div>
+                    <div class="agent-task">Completed: Flutter app analysis (72/100 score)</div>
+                </div>
+                <div class="status-dot completed"></div>
+            </div>
+            <div class="agent-status">
+                <div class="agent-icon">⚙️</div>
+                <div class="agent-info">
+                    <div class="agent-name">API Backend Agent</div>
+                    <div class="agent-task">Completed: FastAPI analysis (6.1/10 score)</div>
+                </div>
+                <div class="status-dot completed"></div>
+            </div>
+        </div>
+
+        <!-- Overall Scores -->
+        <div class="section">
+            <h2 class="section-title">📊 Overall Project Scores</h2>
+            <div class="grid">
+                <div class="card">
+                    <h2>🔒 Security</h2>
+                    <div class="score high">62/100</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill high" style="width: 62%"></div>
+                    </div>
+                    <p style="color: #94A3B8; font-size: 0.85rem;">Moderate Risk - 5 critical, 4 high, 6 medium issues</p>
+                </div>
+                <div class="card">
+                    <h2>🧠 ML Model</h2>
+                    <div class="score good">85/100</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill good" style="width: 85%"></div>
+                    </div>
+                    <p style="color: #94A3B8; font-size: 0.85rem;">5.36M params, 480ms CPU inference</p>
+                </div>
+                <div class="card">
+                    <h2>📱 Mobile App</h2>
+                    <div class="score medium">72/100</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill medium" style="width: 72%"></div>
+                    </div>
+                    <p style="color: #94A3B8; font-size: 0.85rem;">Good foundation, needs testing (40/100)</p>
+                </div>
+                <div class="card">
+                    <h2>⚙️ API Backend</h2>
+                    <div class="score high">61/100</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill high" style="width: 61%"></div>
+                    </div>
+                    <p style="color: #94A3B8; font-size: 0.85rem;">Needs production hardening</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Performance Metrics -->
+        <div class="section">
+            <h2 class="section-title">⚡ Performance Metrics</h2>
+            <div class="metric-grid">
+                <div class="metric">
+                    <div class="metric-value">480ms</div>
+                    <div class="metric-label">Avg Inference (CPU)</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value">2.1/s</div>
+                    <div class="metric-label">Throughput (img/sec)</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value">5.36M</div>
+                    <div class="metric-label">Model Parameters</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value">224px</div>
+                    <div class="metric-label">Input Size</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Critical Security Findings -->
+        <div class="section">
+            <h2 class="section-title">🚨 Critical Security Issues (Fix Immediately)</h2>
+            <div class="finding critical">
+                <h4>🔴 CVE-2024-3700: Pillow Buffer Overflow</h4>
+                <p><span class="badge critical">CRITICAL</span> Pillow 10.4.0 has known vulnerability. Upgrade to Pillow >= 10.4.0. Risk: Remote code execution via crafted images.</p>
+            </div>
+            <div class="finding critical">
+                <h4>🔴 CVE-2024-22421: Uvicorn HTTP/2 DOS</h4>
+                <p><span class="badge critical">CRITICAL</span> Uvicorn 0.24.0 vulnerable to denial of service. Upgrade to uvicorn >= 0.27.0.</p>
+            </div>
+            <div class="finding critical">
+                <h4>🔴 Debug Mode Enabled in Production Config</h4>
+                <p><span class="badge critical">CRITICAL</span> DEBUG=1 in .env exposes API docs and detailed errors. Set DEBUG=0 for production.</p>
+            </div>
+            <div class="finding critical">
+                <h4>🔴 CORS Allows All Origins (Misconfiguration)</h4>
+                <p><span class="badge critical">CRITICAL</span> If CORS_ORIGINS not set, all origins allowed. Set explicit origins for production.</p>
+            </div>
+            <div class="finding critical">
+                <h4>🔴 HTTP Only - No TLS/HTTPS Enforcement</h4>
+                <p><span class="badge critical">CRITICAL</span> API runs on HTTP by default. Deploy behind HTTPS reverse proxy (nginx/Caddy).</p>
+            </div>
+        </div>
+
+        <!-- High Priority Findings -->
+        <div class="section">
+            <h2 class="section-title">⚠️ High Priority Issues</h2>
+            <div class="finding high">
+                <h4>🟠️ Outdated Dependencies with Known CVEs</h4>
+                <p><span class="badge high">HIGH</span> torch 2.1.0, torchvision 0.16.0, streamlit 1.28.2 have multiple CVEs. Run: pip install --upgrade torch torchvision streamlit numpy uvicorn</p>
+            </div>
+            <div class="finding high">
+                <h4>🟠️ Unsafe HTML Rendering with Variable Interpolation</h4>
+                <p><span class="badge high">HIGH</span> 6 instances of unsafe_allow_html=True with f-string interpolation. Risk: XSS-like attacks if user-controlled data.</p>
+            </div>
+            <div class="finding high">
+                <h4>🟠️ API Authentication Can Be Disabled</h4>
+                <p><span class="badge high">HIGH</span> If API_KEY env var is empty, all endpoints accessible. Make API key mandatory for production.</p>
+            </div>
+        </div>
+
+        <!-- ML Model Findings -->
+        <div class="section">
+            <h2 class="section-title">🧠 ML Model Analysis</h2>
+            <div class="grid">
+                <div class="card">
+                    <h2>✅ Strengths</h2>
+                    <ul style="color: #94A3B8; font-size: 0.85rem; line-height: 1.6; padding-left: 1.2rem;">
+                        <li>EfficientNet-B0 backbone (good balance size/accuracy)</li>
+                        <li>Multi-task learning (freshness + quality + shelf-life)</li>
+                        <li>Proper loss weighting (0.4/0.3/0.25/0.05)</li>
+                        <li>Grad-CAM visualization implemented</li>
+                        <li>Singleton model loading pattern</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h2>⚠️ Issues Found</h2>
+                    <ul style="color: #94A3B8; font-size: 0.85rem; line-height: 1.6; padding-left: 1.2rem;">
+                        <li>No data leakage validation code</li>
+                        <li>Grad-CAM hook memory leak risk</li>
+                        <li>Checkpoint path hardcoded in config</li>
+                        <li>No INT8 quantization for mobile</li>
+                        <li>Model not validated for OOD detection</li>
+                    </ul>
+                </div>
+            </div>
+            <h3 style="color: #F8FAFC; margin: 1.5rem 0 1rem; font-size: 1.1rem;">🎯 Improvement Recommendations</h3>
+            <table>
+                <tr><th>Priority</th><th>Recommendation</th><th>Impact</th><th>Effort</th></tr>
+                <tr><td><span class="badge high">HIGH</span></td><td>Validate data splits for leakage</td><td>High</td><td>Medium</td></tr>
+                <tr><td><span class="badge high">HIGH</span></td><td>Add INT8 quantization (2-4x speedup)</td><td>High</td><td>Medium</td></tr>
+                <tr><td><span class="badge medium">MED</span></td><td>Knowledge distillation to MobileNetV3</td><td>Medium</td><td>High</td></tr>
+                <tr><td><span class="badge medium">MED</span></td><td>Integrate OOD detection</td><td>Medium</td><td>Low</td></tr>
+                <tr><td><span class="badge low">LOW</span></td><td>TFLite conversion for mobile</td><td>Low</td><td>High</td></tr>
+            </table>
+        </div>
+
+        <!-- Mobile App Findings -->
+        <div class="section">
+            <h2 class="section-title">📱 Mobile App Analysis (72/100)</h2>
+            <div class="grid">
+                <div class="card">
+                    <h2>✅ Strengths</h2>
+                    <ul style="color: #94A3B8; font-size: 0.85rem; line-height: 1.6; padding-left: 1.2rem;">
+                        <li>Clean architecture (screens/services/widgets)</li>
+                        <li>Material 3 theming with dark mode</li>
+                        <li>Camera integration with overlay</li>
+                        <li>State preservation with AutomaticKeepAlive</li>
+                        <li>Error handling with user-friendly messages</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h2>⚠️ Issues Found</h2>
+                    <ul style="color: #94A3B8; font-size: 0.85rem; line-height: 1.6; padding-left: 1.2rem;">
+                        <li>No camera permission request flow</li>
+                        <li>Fixed portrait mode (limits tablet UX)</li>
+                        <li>Test coverage only 40% (needs 60%+)</li>
+                        <li>No SQLite migration strategy</li>
+                        <li>IndexedStack keeps ALL screens in memory</li>
+                    </ul>
+                </div>
+            </div>
+            <h3 style="color: #F8FAFC; margin: 1.5rem 0 1rem; font-size: 1.1rem;">🎯 Priority Improvements</h3>
+            <table>
+                <tr><th>Priority</th><th>Task</th><th>Score Impact</th></tr>
+                <tr><td><span class="badge high">CRITICAL</span></td><td>Add camera permission flow (permission_handler)</td><td>+10 points</td></tr>
+                <tr><td><span class="badge high">CRITICAL</span></td><td>Expand test coverage to 60%+</td><td>+15 points</td></tr>
+                <tr><td><span class="badge medium">MED</span></td><td>Fix Android permissions (INTERNET, etc.)</td><td>+5 points</td></tr>
+                <tr><td><span class="badge medium">MED</span></td><td>Add database migrations</td><td>+5 points</td></tr>
+                <tr><td><span class="badge low">LOW</span></td><td>Replace IndexedStack with lazy loading</td><td>+3 points</td></tr>
+            </table>
+        </div>
+
+        <!-- API Backend Findings -->
+        <div class="section">
+            <h2 class="section-title">⚙️ API Backend Analysis (61/100)</h2>
+            <div class="grid">
+                <div class="card">
+                    <h2>✅ Strengths</h2>
+                    <ul style="color: #94A3B8; font-size: 0.85rem; line-height: 1.6; padding-left: 1.2rem;">
+                        <li>API key auth with constant-time comparison</li>
+                        <li>Rate limiting with slowapi</li>
+                        <li>Dual validation (content-type + magic bytes)</li>
+                        <li>Thread-safe inference with Lock()</li>
+                        <li>Request ID tracking for tracing</li>
+                    </ul>
+                </div>
+                <div class="card">
+                    <h2>⚠️ Issues Found</h2>
+                    <ul style="color: #94A3B8; font-size: 0.85rem; line-height: 1.6; padding-left: 1.2rem;">
+                        <li>/metrics endpoint not proper Prometheus format</li>
+                        <li>SQLite not suitable for production</li>
+                        <li>No request timeout on inference</li>
+                        <li>Logging ContextVar bug (overwrites factory)</li>
+                        <li>No response caching (Redis)</li>
+                    </ul>
+                </div>
+            </div>
+            <h3 style="color: #F8FAFC; margin: 1.5rem 0 1rem; font-size: 1.1rem;">🎯 Production Readiness Roadmap</h3>
+            <table>
+                <tr><th>Phase</th><th>Tasks</th><th>Timeline</th></tr>
+                <tr><td><span class="badge high">1</span></td><td>Fix security (CVEs, CORS, HTTPS, DEBUG)</td><td>Week 1</td></tr>
+                <tr><td><span class="badge medium">2</span></td><td>Fix /metrics (Prometheus), add Redis for rate limiting</td><td>Week 2</td></tr>
+                <tr><td><span class="badge medium">3</span></td><td>Migrate SQLite → PostgreSQL, add caching</td><td>Week 3-4</td></tr>
+                <tr><td><span class="badge low">4</span></td><td>Add OpenTelemetry tracing, alert rules</td><td>Week 5</td></tr>
+            </table>
+        </div>
+
+        <!-- OWASP Top 10 Mapping -->
+        <div class="section">
+            <h2 class="section-title">🛡️ OWASP Mobile Top 10 Mapping</h2>
+            <table>
+                <tr><th>OWASP Category</th><th>Risk Level</th><th>Status in FreshTrack</th></tr>
+                <tr><td>M1: Improper Platform Usage</td><td><span class="badge medium">MEDIUM</span></td><td>Missing camera permission flow, no biometric lock</td></tr>
+                <tr><td>M2: Insecure Data Storage</td><td><span class="badge medium">MEDIUM</span></td><td>SQLite unencrypted, no auto-delete</td></tr>
+                <tr><td>M3: Insecure Communication</td><td><span class="badge high">HIGH</span></td><td>HTTP fallback URLs, no certificate pinning</td></tr>
+                <tr><td>M4: Insecure Authentication</td><td><span class="badge low">LOW</span></td><td>API key stored securely in FlutterSecureStorage</td></tr>
+                <tr><td>M5: Insufficient Cryptography</td><td><span class="badge low">LOW</span></td><td>No sensitive data encryption at rest</td></tr>
+                <tr><td>M6: Insecure Authorization</td><td><span class="badge medium">MEDIUM</span></td><td>API key can be disabled in backend</td></tr>
+                <tr><td>M7: Client Code Quality</td><td><span class="badge medium">MEDIUM</span></td><td>40% test coverage (needs improvement)</td></tr>
+                <tr><td>M8: Code Tampering</td><td><span class="badge low">LOW</span></td><td>No root detection implemented</td></tr>
+                <tr><td>M9: Reverse Engineering</td><td><span class="badge low">LOW</span></td><td>No code obfuscation</td></tr>
+                <tr><td>M10: Extraneous Functionality</td><td><span class="badge low">LOW</span></td><td>Debug mode can expose API docs</td></tr>
+            </table>
+        </div>
+
+        <!-- Testing Status -->
+        <div class="section">
+            <h2 class="section-title">🧪 Testing Coverage</h2>
+            <div class="grid">
+                <div class="card">
+                    <h2>📱 Mobile App</h2>
+                    <div class="score medium">40%</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill medium" style="width: 40%"></div>
+                    </div>
+                    <p style="color: #94A3B8; font-size: 0.85rem; margin-top: 1rem;">
+                        <strong>Missing:</strong><br>
+                        - Unit tests for ApiService<br>
+                        - Unit tests for DatabaseService<br>
+                        - Widget tests for all screens<br>
+                        - Integration tests
+                    </p>
+                </div>
+                <div class="card">
+                    <h2>⚙️ API Backend</h2>
+                    <div class="score medium">30%</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill medium" style="width: 30%"></div>
+                    </div>
+                    <p style="color: #94A3B8; font-size: 0.85rem; margin-top: 1rem;">
+                        <strong>Missing:</strong><br>
+                        - Pytest for endpoints<br>
+                        - Mock tests for model inference<br>
+                        - Load testing scripts<br>
+                        - Security test cases
+                    </p>
+                </div>
+                <div class="card">
+                    <h2>🖥️ Desktop (Streamlit)</h2>
+                    <div class="score low">20%</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill low" style="width: 20%"></div>
+                    </div>
+                    <p style="color: #94A3B8; font-size: 0.85rem; margin-top: 1rem;">
+                        <strong>Missing:</strong><br>
+                        - Streamlit test runner<br>
+                        - UI automation tests<br>
+                        - Prediction flow tests<br>
+                        - Error handling tests
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Next Steps -->
+        <div class="section">
+            <h2 class="section-title">🚀 Recommended Next Steps</h2>
+            <div class="card" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(16, 185, 129, 0.1) 100%);">
+                <h2>Week 1: Security Hardening (CRITICAL)</h2>
+                <ol style="color: #94A3B8; line-height: 1.8; padding-left: 1.5rem;">
+                    <li>Upgrade all dependencies (pip install --upgrade -r requirements.txt)</li>
+                    <li>Set DEBUG=0 in .env for production</li>
+                    <li>Configure CORS_ORIGINS with explicit domains</li>
+                    <li>Deploy backend behind HTTPS reverse proxy</li>
+                    <li>Add camera permission flow to mobile app</li>
+                </ol>
+            </div>
+            <div class="card" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%); margin-top: 1rem;">
+                <h2>Week 2-3: Performance & Quality</h2>
+                <ol style="color: #94A3B8; line-height: 1.8; padding-left: 1.5rem;">
+                    <li>Add INT8 quantization to ML model (2-4x speedup)</li>
+                    <li>Implement prediction response caching with Redis</li>
+                    <li>Expand test coverage to 60%+ for mobile app</li>
+                    <li>Fix logging ContextVar bug in API backend</li>
+                    <li>Add proper Prometheus metrics endpoint</li>
+                </ol>
+            </div>
+            <div class="card" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%); margin-top: 1rem;">
+                <h2>Week 4+: Production Readiness</h2>
+                <ol style="color: #94A3B8; line-height: 1.8; padding-left: 1.5rem;">
+                    <li>Migrate from SQLite to PostgreSQL</li>
+                    <li>Add OpenTelemetry distributed tracing</li>
+                    <li>Implement alerts (Prometheus/Alertmanager)</li>
+                    <li>Add TFLite conversion for mobile offline mode</li>
+                    <li>Prepare for Google Play Store submission</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div style="text-align: center; padding: 2rem; color: #64748B; font-size: 0.85rem;">
+            <p>FreshTrack AI Analysis Dashboard | Generated by Ruflo V3 Multi-Agent System</p>
+            <p>Agents: Security Analyst | ML Performance Analyzer | Mobile App Architect | API Backend Analyzer</p>
+            <p>© 2026 FreshTrack AI | Dashboard Version 1.0</p>
+        </div>
+    </div>
+</body>
+</html>

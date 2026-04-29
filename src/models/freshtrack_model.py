@@ -78,6 +78,17 @@ class FreshTrackModel(pl.LightningModule):
 
         return freshness_logits, quality_logits, shelf_life, rotation_logits
 
+    def compute_entropy(self, logits):
+        """Compute Shannon entropy for OOD detection.
+        
+        Higher entropy = more uncertain prediction.
+        Returns entropy in bits (log base 2).
+        """
+        probs = torch.softmax(logits, dim=1)
+        eps = 1e-10
+        entropy = -torch.sum(probs * torch.log(probs + eps), dim=1)
+        return entropy / torch.log(torch.tensor(2.0, device=logits.device))
+
     def training_step(self, batch, batch_idx):
         images, labels = batch
 
