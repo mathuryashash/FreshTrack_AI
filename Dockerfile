@@ -17,7 +17,7 @@ RUN apt-get update --fix-missing && apt-get install -y --no-install-recommends \
 
 # Copy production requirements and install (faster builds, no ML training deps)
 COPY requirements-api.txt .
-RUN pip install --no-cache-dir -r requirements-api.txt \
+RUN pip install --no-cache-dir --retries=5 --timeout=30 -r requirements-api.txt \
     -f https://download.pytorch.org/whl/cpu/torch_stable.html
 
 # Copy source code
