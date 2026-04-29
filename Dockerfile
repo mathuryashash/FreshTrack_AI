@@ -7,11 +7,11 @@ WORKDIR /app
 # Install system dependencies with retry mechanism
 RUN apt-get update --fix-missing && apt-get install -y --no-install-recommends \
     build-essential \
-    libgl1-mesa-glx \
+    libgl1 \
     libglib2.0-0 \
     || (sleep 10 && apt-get update --fix-missing && apt-get install -y --no-install-recommends \
     build-essential \
-    libgl1-mesa-glx \
+    libgl1 \
     libglib2.0-0) \
     && rm -rf /var/lib/apt/lists/*
 
