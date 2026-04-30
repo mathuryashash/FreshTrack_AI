@@ -30,12 +30,19 @@ def download_model():
     else:
         os.makedirs(MODEL_DIR, exist_ok=True)
         print(f"⬇️  Downloading model from Hugging Face: {HF_REPO_ID}...")
-        hf_hub_download(
-            repo_id=HF_REPO_ID,
-            filename=MODEL_FILENAME,
-            local_dir=MODEL_DIR,
-        )
-        print(f"✅ Model downloaded to: {MODEL_PATH}")
+        
+        # ADDED TRY-EXCEPT BLOCK HERE TO PREVENT CRASHING
+        try:
+            hf_hub_download(
+                repo_id=HF_REPO_ID,
+                filename=MODEL_FILENAME,
+                local_dir=MODEL_DIR,
+            )
+            print(f"✅ Model downloaded to: {MODEL_PATH}")
+        except Exception as e:
+            print(f"⚠️  Warning: Failed to download model: {e}")
+            print("⚠️  The API will start in degraded mode without a model.")
+            return None
 
     if EXPECTED_SHA256:
         actual = _sha256(MODEL_PATH)
