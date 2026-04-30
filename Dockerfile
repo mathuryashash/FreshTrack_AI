@@ -24,9 +24,9 @@ RUN pip install --no-cache-dir --retries=5 --timeout=30 -r requirements-api.txt 
 COPY src/ ./src/
 COPY download_model.py .
 
-# Create appuser and appgroup first, then create models directory with proper permissions
+# Create appuser and appgroup first, then create models and data directories with proper permissions
 RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser && \
-    mkdir -p models/checkpoints && chown -R appuser:appgroup models
+    mkdir -p models/checkpoints data && chown -R appuser:appgroup models data
 
 # Download model if not present, then start server
 USER appuser
