@@ -14,6 +14,8 @@ from src.config import (
     IMAGE_SIZE,
 )
 
+IGNORE_LABEL = -100  # nn.CrossEntropyLoss default ignore_index
+
 
 class FruitDataset(Dataset):
     def __init__(self, metadata_file, transform=None, split="train", split_field="split"):
@@ -40,7 +42,8 @@ class FruitDataset(Dataset):
         self.data = [item for item in images_data if item.get(split_field) == split]
         self.transform = transform
         for item in self.data:
-            if item["freshness"] not in FRESHNESS_TO_IDX:
+            # None = freshness not annotated (type-only sources); the loss skips it
+            if item["freshness"] is not None and item["freshness"] not in FRESHNESS_TO_IDX:
                 raise ValueError(f"Unknown freshness label {item['freshness']!r}")
             if item["produce_type"] not in PRODUCE_TO_IDX:
                 raise ValueError(f"Unknown produce type {item['produce_type']!r}")
@@ -66,8 +69,9 @@ class FruitDataset(Dataset):
             augmented = self.transform(image=image)
             image = augmented["image"]
 
+        fresh = IGNORE_LABEL if item["freshness"] is None else FRESHNESS_TO_IDX[item["freshness"]]
         labels = {
-            "freshness": torch.tensor(FRESHNESS_TO_IDX[item["freshness"]], dtype=torch.long),
+            "freshness": torch.tensor(fresh, dtype=torch.long),
             "produce_type": torch.tensor(
                 PRODUCE_TO_IDX[item["produce_type"]], dtype=torch.long
             ),
@@ -77,7 +81,31 @@ class FruitDataset(Dataset):
 
 
 # Define transforms
-def get_train_transforms():
+def get_train_transforms(strong=False):
+    if strong:
+        # For the deployment model: phone photos are off-centre, cluttered,
+        # blurred and recompressed, unlike the plain-background training data.
+        return A.Compose(
+            [
+                A.RandomResizedCrop(size=(IMAGE_SIZE, IMAGE_SIZE), scale=(0.3, 1.0), ratio=(0.6, 1.67)),
+                A.HorizontalFlip(p=0.5),
+                A.VerticalFlip(p=0.2),
+                A.RandomRotate90(p=0.5),
+                A.ColorJitter(brightness=0.35, contrast=0.35, saturation=0.35, hue=0.05, p=0.8),
+                A.OneOf([A.GaussianBlur(blur_limit=(3, 7)), A.MotionBlur(blur_limit=(3, 9))], p=0.25),
+                A.ImageCompression(quality_range=(35, 95), p=0.4),
+                A.GaussNoise(p=0.2),
+                A.CoarseDropout(
+                    num_holes_range=(1, 4),
+                    hole_height_range=(16, 48),
+                    hole_width_range=(16, 48),
+                    fill=0,
+                    p=0.3,
+                ),
+                A.Normalize(mean=NORMALIZE_MEAN, std=NORMALIZE_STD),
+                ToTensorV2(),
+            ]
+        )
     return A.Compose(
         [
             A.RandomResizedCrop(size=(IMAGE_SIZE, IMAGE_SIZE), scale=(0.8, 1.0)),

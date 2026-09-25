@@ -1,0 +1,551 @@
+[
+ {
+  "file": "banana_fresh_00.jpg",
+  "produce_type": "banana",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/8092/8462993806_a1861baa20_b.jpg",
+  "license": "by",
+  "creator": "oatsy40",
+  "source": "flickr"
+ },
+ {
+  "file": "banana_fresh_08.jpg",
+  "produce_type": "banana",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/26/54030635_3a60fe6a28_b.jpg",
+  "license": "by",
+  "creator": "JimReeves",
+  "source": "flickr"
+ },
+ {
+  "file": "banana_fresh_10.jpg",
+  "produce_type": "banana",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/5289/5326441714_592655328d_b.jpg",
+  "license": "by-nd",
+  "creator": "Roshan Vyas",
+  "source": "flickr"
+ },
+ {
+  "file": "banana_fresh_11.jpg",
+  "produce_type": "banana",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/1934/45568345721_2fc32dd9d5_b.jpg",
+  "license": "cc0",
+  "creator": "Artem Beliaikin",
+  "source": "flickr"
+ },
+ {
+  "file": "banana_stale_01.jpg",
+  "produce_type": "banana",
+  "freshness": "Stale",
+  "url": "https://live.staticflickr.com/2718/4301801893_9b728fd0a6_b.jpg",
+  "license": "by",
+  "creator": "Zawezome",
+  "source": "flickr"
+ },
+ {
+  "file": "banana_stale_02.jpg",
+  "produce_type": "banana",
+  "freshness": "Stale",
+  "url": "https://live.staticflickr.com/3147/2852484103_c101a68cc5.jpg",
+  "license": "by-sa",
+  "creator": "Ivy Dawned",
+  "source": "flickr"
+ },
+ {
+  "file": "banana_stale_06.jpg",
+  "produce_type": "banana",
+  "freshness": "Stale",
+  "url": "https://live.staticflickr.com/3040/2995801224_4f6781179e.jpg",
+  "license": "by",
+  "creator": "wellohorld",
+  "source": "flickr"
+ },
+ {
+  "file": "apple_fresh_01.jpg",
+  "produce_type": "apple",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/65535/46763463785_d9c4a44e40_b.jpg",
+  "license": "by",
+  "creator": "John Beans",
+  "source": "flickr"
+ },
+ {
+  "file": "apple_fresh_02.jpg",
+  "produce_type": "apple",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/1451/24724947649_d4e304c223_b.jpg",
+  "license": "by-nc",
+  "creator": "Learning Music",
+  "source": "flickr"
+ },
+ {
+  "file": "apple_fresh_03.jpg",
+  "produce_type": "apple",
+  "freshness": "Fresh",
+  "url": "https://images.rawpixel.com/editor_1024/czNmcy1wcml2YXRlL3Jhd3BpeGVsX2ltYWdlcy93ZWJzaXRlX2NvbnRlbnQvbHIvZnJhcHBsZXNfZnJ1aXRfcmVkX2FwcGxlXzEtaW1hZ2Uta3liZWNkOTguanBn.jpg",
+  "license": "cc0",
+  "creator": null,
+  "source": "rawpixel"
+ },
+ {
+  "file": "apple_fresh_04.jpg",
+  "produce_type": "apple",
+  "freshness": "Fresh",
+  "url": "https://images.rawpixel.com/editor_1024/cHJpdmF0ZS9zdGF0aWMvaW1hZ2Uvd2Vic2l0ZS8yMDIyLTA0L2xyL2ZyYXBwbGVfYmFza2V0X2ZydWl0X2Jhc2tldF8wLWltYWdlLWt5YmM5ZXFyLmpwZw.jpg",
+  "license": "cc0",
+  "creator": null,
+  "source": "rawpixel"
+ },
+ {
+  "file": "apple_fresh_05.jpg",
+  "produce_type": "apple",
+  "freshness": "Fresh",
+  "url": "https://images.rawpixel.com/editor_1024/cHJpdmF0ZS9zdGF0aWMvaW1hZ2Uvd2Vic2l0ZS8yMDIyLTA0L2xyL2ZyYXBwbGVfYmlvX2FwcGxlX25hdHVyYWwtaW1hZ2Uta3liY2FqaTguanBn.jpg",
+  "license": "cc0",
+  "creator": null,
+  "source": "rawpixel"
+ },
+ {
+  "file": "apple_fresh_06.jpg",
+  "produce_type": "apple",
+  "freshness": "Fresh",
+  "url": "https://images.rawpixel.com/editor_1024/cHJpdmF0ZS9zdGF0aWMvaW1hZ2Uvd2Vic2l0ZS8yMDIyLTA0L2xyL2ZyYXBwbGVfY3V0dGluZ19ib2FyZF9iYXNrZXRfMC1pbWFnZS1reWJlZGxhbC5qcGc.jpg",
+  "license": "cc0",
+  "creator": null,
+  "source": "rawpixel"
+ },
+ {
+  "file": "apple_fresh_07.jpg",
+  "produce_type": "apple",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/3224/2509050598_994315e4f1.jpg",
+  "license": "by-nc-nd",
+  "creator": "Martin Gommel",
+  "source": "flickr"
+ },
+ {
+  "file": "apple_fresh_08.jpg",
+  "produce_type": "apple",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/8033/8033505640_44e0bfd19d_b.jpg",
+  "license": "by-sa",
+  "creator": "fotografeleen",
+  "source": "flickr"
+ },
+ {
+  "file": "apple_fresh_10.jpg",
+  "produce_type": "apple",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/3258/2796325875_2316a0aecb_b.jpg",
+  "license": "by-sa",
+  "creator": "Anthony Thomas",
+  "source": "flickr"
+ },
+ {
+  "file": "apple_fresh_11.jpg",
+  "produce_type": "apple",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/8031/7910673688_c664fbd2d7_b.jpg",
+  "license": "by-nc-nd",
+  "creator": "1sock",
+  "source": "flickr"
+ },
+ {
+  "file": "apple_stale_02.jpg",
+  "produce_type": "apple",
+  "freshness": "Stale",
+  "url": "https://live.staticflickr.com/142/357248634_bebb20244b.jpg",
+  "license": "by-nc-sa",
+  "creator": "johnwayne2006",
+  "source": "flickr"
+ },
+ {
+  "file": "apple_stale_03.jpg",
+  "produce_type": "apple",
+  "freshness": "Stale",
+  "url": "https://live.staticflickr.com/2126/2189164888_c9b52b6ba2_b.jpg",
+  "license": "by",
+  "creator": "alison e dunn",
+  "source": "flickr"
+ },
+ {
+  "file": "apple_stale_04.jpg",
+  "produce_type": "apple",
+  "freshness": "Stale",
+  "url": "https://live.staticflickr.com/82/244816716_73fee273ae.jpg",
+  "license": "by",
+  "creator": "fotologic",
+  "source": "flickr"
+ },
+ {
+  "file": "apple_stale_05.jpg",
+  "produce_type": "apple",
+  "freshness": "Stale",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/7/71/Rotten_apple.jpg",
+  "license": "by-sa",
+  "creator": "Kulmalukko",
+  "source": "wikimedia"
+ },
+ {
+  "file": "apple_stale_08.jpg",
+  "produce_type": "apple",
+  "freshness": "Stale",
+  "url": "https://live.staticflickr.com/7150/6478222857_2eee6a92e4.jpg",
+  "license": "by-nc",
+  "creator": "eltpics",
+  "source": "flickr"
+ },
+ {
+  "file": "apple_stale_10.jpg",
+  "produce_type": "apple",
+  "freshness": "Stale",
+  "url": "https://live.staticflickr.com/2533/3815343370_dd860b9bbd_b.jpg",
+  "license": "by-sa",
+  "creator": "barockschloss",
+  "source": "flickr"
+ },
+ {
+  "file": "orange_fresh_00.jpg",
+  "produce_type": "orange",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/8813/16477263453_64c7056c32_b.jpg",
+  "license": "by",
+  "creator": "piropiro3",
+  "source": "flickr"
+ },
+ {
+  "file": "orange_fresh_03.jpg",
+  "produce_type": "orange",
+  "freshness": "Fresh",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/c/c4/Orange-Fruit-Pieces.jpg",
+  "license": "by-sa",
+  "creator": "Evan-Amos",
+  "source": "wikimedia"
+ },
+ {
+  "file": "orange_fresh_09.jpg",
+  "produce_type": "orange",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/2387/2234898148_de914a47b8_b.jpg",
+  "license": "by-nc-nd",
+  "creator": "Rock Paper Image",
+  "source": "flickr"
+ },
+ {
+  "file": "orange_stale_03.jpg",
+  "produce_type": "orange",
+  "freshness": "Stale",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/7/73/Moldy_orange_in_lake.jpg",
+  "license": "cc0",
+  "creator": "GeographUser",
+  "source": "wikimedia"
+ },
+ {
+  "file": "orange_stale_09.jpg",
+  "produce_type": "orange",
+  "freshness": "Stale",
+  "url": "https://live.staticflickr.com/43/100317097_f5e7ec8d8c_b.jpg",
+  "license": "by-nd",
+  "creator": "mrs. scrapygraphics",
+  "source": "flickr"
+ },
+ {
+  "file": "orange_stale_11.jpg",
+  "produce_type": "orange",
+  "freshness": "Stale",
+  "url": "https://live.staticflickr.com/3010/3038155146_a476162f3d_b.jpg",
+  "license": "by-nc-sa",
+  "creator": "Crystalline Radical",
+  "source": "flickr"
+ },
+ {
+  "file": "tomato_fresh_00.jpg",
+  "produce_type": "tomato",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/199/499458167_fa582f64f4_b.jpg",
+  "license": "by-nc-sa",
+  "creator": "Ed Yourdon",
+  "source": "flickr"
+ },
+ {
+  "file": "tomato_fresh_02.jpg",
+  "produce_type": "tomato",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/7283/8736856647_76b440cfc4_b.jpg",
+  "license": "by",
+  "creator": "Geoff Peters 604",
+  "source": "flickr"
+ },
+ {
+  "file": "tomato_fresh_03.jpg",
+  "produce_type": "tomato",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/7364/12633246775_49deea92f9_b.jpg",
+  "license": "by-sa",
+  "creator": "catlovers",
+  "source": "flickr"
+ },
+ {
+  "file": "tomato_fresh_04.jpg",
+  "produce_type": "tomato",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/7284/8736855569_899b9bacbe_b.jpg",
+  "license": "by",
+  "creator": "Geoff Peters 604",
+  "source": "flickr"
+ },
+ {
+  "file": "tomato_fresh_05.jpg",
+  "produce_type": "tomato",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/7283/8737976760_25d9eced95_b.jpg",
+  "license": "by",
+  "creator": "Geoff Peters 604",
+  "source": "flickr"
+ },
+ {
+  "file": "tomato_fresh_07.jpg",
+  "produce_type": "tomato",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/6207/6092731935_08b7d553f0_b.jpg",
+  "license": "by",
+  "creator": "cookbookman17",
+  "source": "flickr"
+ },
+ {
+  "file": "tomato_fresh_08.jpg",
+  "produce_type": "tomato",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/7286/8736855797_7158489bae_b.jpg",
+  "license": "by",
+  "creator": "Geoff Peters 604",
+  "source": "flickr"
+ },
+ {
+  "file": "tomato_fresh_09.jpg",
+  "produce_type": "tomato",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/65535/51413842561_c94017a13d_b.jpg",
+  "license": "by",
+  "creator": "Amba-lee",
+  "source": "flickr"
+ },
+ {
+  "file": "tomato_fresh_10.jpg",
+  "produce_type": "tomato",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/1204/1490244020_95af141923.jpg",
+  "license": "by",
+  "creator": "the Italian voice",
+  "source": "flickr"
+ },
+ {
+  "file": "tomato_fresh_11.jpg",
+  "produce_type": "tomato",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/7286/8737976530_69f1977dda_b.jpg",
+  "license": "by",
+  "creator": "Geoff Peters 604",
+  "source": "flickr"
+ },
+ {
+  "file": "tomato_stale_04.jpg",
+  "produce_type": "tomato",
+  "freshness": "Stale",
+  "url": "https://live.staticflickr.com/2816/10636670655_e652e1d5fa_b.jpg",
+  "license": "by",
+  "creator": "Michele Dorsey Walfred",
+  "source": "flickr"
+ },
+ {
+  "file": "tomato_stale_05.jpg",
+  "produce_type": "tomato",
+  "freshness": "Stale",
+  "url": "https://live.staticflickr.com/2190/1540798176_90f602b219_b.jpg",
+  "license": "by-nc-sa",
+  "creator": "Daniel Kulinski",
+  "source": "flickr"
+ },
+ {
+  "file": "tomato_stale_06.jpg",
+  "produce_type": "tomato",
+  "freshness": "Stale",
+  "url": "https://live.staticflickr.com/28/50965201_b18ecc615c_b.jpg",
+  "license": "by-nc-sa",
+  "creator": "Major Clanger",
+  "source": "flickr"
+ },
+ {
+  "file": "tomato_stale_08.jpg",
+  "produce_type": "tomato",
+  "freshness": "Stale",
+  "url": "https://live.staticflickr.com/8012/7703253642_ca0d1f7c5f_b.jpg",
+  "license": "by",
+  "creator": "Tim Sheerman-Chase",
+  "source": "flickr"
+ },
+ {
+  "file": "tomato_stale_09.jpg",
+  "produce_type": "tomato",
+  "freshness": "Stale",
+  "url": "https://live.staticflickr.com/8423/7703263484_5e3f96b442_b.jpg",
+  "license": "by",
+  "creator": "Tim Sheerman-Chase",
+  "source": "flickr"
+ },
+ {
+  "file": "capsicum_fresh_00.jpg",
+  "produce_type": "capsicum",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/4114/4783962793_3faa4051c3_b.jpg",
+  "license": "by",
+  "creator": "cobblucas",
+  "source": "flickr"
+ },
+ {
+  "file": "capsicum_fresh_01.jpg",
+  "produce_type": "capsicum",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/3862/14771872333_5db889c539_b.jpg",
+  "license": "by",
+  "creator": "Scott 97006",
+  "source": "flickr"
+ },
+ {
+  "file": "capsicum_fresh_05.jpg",
+  "produce_type": "capsicum",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/5051/5571468411_7c82cb6f0a_b.jpg",
+  "license": "by",
+  "creator": "Sharunas Jurevic",
+  "source": "flickr"
+ },
+ {
+  "file": "capsicum_fresh_06.jpg",
+  "produce_type": "capsicum",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/8620/15859073629_a197d1f5a9_b.jpg",
+  "license": "by-nc-nd",
+  "creator": "Fotografik33 - www.fotografik33.com",
+  "source": "flickr"
+ },
+ {
+  "file": "capsicum_fresh_07.jpg",
+  "produce_type": "capsicum",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/4055/5076898400_9d44523fcc_b.jpg",
+  "license": "by",
+  "creator": "Denim Dave",
+  "source": "flickr"
+ },
+ {
+  "file": "capsicum_fresh_08.jpg",
+  "produce_type": "capsicum",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/8444/7805441932_3658f79f7b_b.jpg",
+  "license": "by",
+  "creator": "Au Kirk",
+  "source": "flickr"
+ },
+ {
+  "file": "capsicum_fresh_09.jpg",
+  "produce_type": "capsicum",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/7463/16053079966_8af4024e61_b.jpg",
+  "license": "by",
+  "creator": "JeepersMedia",
+  "source": "flickr"
+ },
+ {
+  "file": "capsicum_fresh_10.jpg",
+  "produce_type": "capsicum",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/7483/16078871385_8f606848e8_b.jpg",
+  "license": "by",
+  "creator": "JeepersMedia",
+  "source": "flickr"
+ },
+ {
+  "file": "bitter_gourd_fresh_00.jpg",
+  "produce_type": "bitter_gourd",
+  "freshness": "Fresh",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/c/c4/Bitter_gourd_%28Momordica_charantia%29.jpg",
+  "license": "by-sa",
+  "creator": "Salil Kumar Mukherjee",
+  "source": "wikimedia"
+ },
+ {
+  "file": "bitter_gourd_fresh_02.jpg",
+  "produce_type": "bitter_gourd",
+  "freshness": "Fresh",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/9/9d/Taiwan_2009_Tainan_City_Organic_Farm_Bitter_Gourd_FRD_7956.jpg",
+  "license": "by-sa",
+  "creator": "Fred Hsu (Wikipedia:User:Fred Hsu on en.wikipedia)",
+  "source": "wikimedia"
+ },
+ {
+  "file": "bitter_gourd_fresh_06.jpg",
+  "produce_type": "bitter_gourd",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/65535/48917780307_9a17c1ebec_b.jpg",
+  "license": "pdm",
+  "creator": "GeorgeTan#2...INACTIVE NOW",
+  "source": "flickr"
+ },
+ {
+  "file": "bitter_gourd_fresh_09.jpg",
+  "produce_type": "bitter_gourd",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/2842/9216332005_cd4aec0fa6_b.jpg",
+  "license": "by-nc-nd",
+  "creator": "stevehuang7",
+  "source": "flickr"
+ },
+ {
+  "file": "bitter_gourd_fresh_10.jpg",
+  "produce_type": "bitter_gourd",
+  "freshness": "Fresh",
+  "url": "https://upload.wikimedia.org/wikipedia/commons/7/7a/Bitter_gourd.jpg",
+  "license": "by-sa",
+  "creator": "Tenbon",
+  "source": "wikimedia"
+ },
+ {
+  "file": "bitter_gourd_stale_04.jpg",
+  "produce_type": "bitter_gourd",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/5332/9574478029_485a11a178_b.jpg",
+  "license": "by-sa",
+  "creator": "Crystalline Radical",
+  "source": "flickr"
+ },
+ {
+  "file": "bitter_gourd_stale_06.jpg",
+  "produce_type": "bitter_gourd",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/3947/14959585694_76fc9f44be_b.jpg",
+  "license": "by-sa",
+  "creator": "OctopusHat",
+  "source": "flickr"
+ },
+ {
+  "file": "bitter_gourd_stale_08.jpg",
+  "produce_type": "bitter_gourd",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/6207/6047456805_2802faf894_b.jpg",
+  "license": "by",
+  "creator": "apple_pathways",
+  "source": "flickr"
+ },
+ {
+  "file": "bitter_gourd_stale_11.jpg",
+  "produce_type": "bitter_gourd",
+  "freshness": "Fresh",
+  "url": "https://live.staticflickr.com/5502/14365263110_c49d2d9afe_b.jpg",
+  "license": "by-nc",
+  "creator": "Slideshow Bruce",
+  "source": "flickr"
+ }
+]

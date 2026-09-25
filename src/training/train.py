@@ -66,6 +66,7 @@ def train(
     learning_rate=DEFAULT_LEARNING_RATE,
     seed=0,
     num_workers=DEFAULT_NUM_WORKERS,
+    strong_aug=False,
 ):
     """Train one run into models/runs/<run_name>/ and return the best checkpoint path."""
     if not os.path.exists(metadata_path):
@@ -84,6 +85,7 @@ def train(
         "batch_size": batch_size,
         "learning_rate": learning_rate,
         "seed": seed,
+        "strong_aug": strong_aug,
         "metadata": str(metadata_path),
         "metadata_sha256": _sha256(metadata_path),
         "git_sha": _git_sha(),
@@ -91,7 +93,7 @@ def train(
     }
     (run_dir / "run_config.json").write_text(json.dumps(config, indent=2))
 
-    train_ds = FruitDataset(metadata_path, get_train_transforms(), "train", split_field)
+    train_ds = FruitDataset(metadata_path, get_train_transforms(strong=strong_aug), "train", split_field)
     val_ds = FruitDataset(metadata_path, get_val_transforms(), "val", split_field)
     print(f"[{run_name}] train={len(train_ds)} val={len(val_ds)} tasks={tasks}")
 
@@ -144,6 +146,7 @@ if __name__ == "__main__":
     parser.add_argument("--lr", type=float, default=DEFAULT_LEARNING_RATE)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--num_workers", type=int, default=DEFAULT_NUM_WORKERS)
+    parser.add_argument("--strong_aug", action="store_true", help="real-photo augmentation (deployment model)")
     args = parser.parse_args()
 
     train(
@@ -157,4 +160,5 @@ if __name__ == "__main__":
         learning_rate=args.lr,
         seed=args.seed,
         num_workers=args.num_workers,
+        strong_aug=args.strong_aug,
     )

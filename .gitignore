@@ -80,3 +80,6 @@ Thumbs.db
 # Large office files
 *.pptx
 *.vsix
+
+# Personal photo used for local testing only
+results/realworld_web/user_banana.png

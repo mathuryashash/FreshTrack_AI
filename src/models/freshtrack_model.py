@@ -81,8 +81,11 @@ class FreshTrackModel(pl.LightningModule):
         logits = self(images)
         total = 0.0
         for t in self.tasks:
+            known = labels[t] != -100  # -100: label not annotated for this image
+            if not known.any():  # e.g. a batch of type-only images for freshness
+                continue
             loss = self._cross_entropy(logits[t], labels[t])
-            acc = (logits[t].argmax(dim=1) == labels[t]).float().mean()
+            acc = (logits[t][known].argmax(dim=1) == labels[t][known]).float().mean()
             total = total + self.loss_weights[t] * loss
             self.log(f"{stage}_loss_{t}", loss)
             self.log(f"{stage}_acc_{t}", acc, prog_bar=True)
