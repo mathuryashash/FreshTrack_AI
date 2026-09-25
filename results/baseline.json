@@ -1,0 +1,22 @@
+{
+  "split": {
+    "freshness": {
+      "accuracy": 0.8629753914988815,
+      "macro_f1": 0.8620932820608879
+    },
+    "produce_type": {
+      "accuracy": 0.7997762863534675,
+      "macro_f1": 0.7602130252213627
+    }
+  },
+  "split_naive": {
+    "freshness": {
+      "accuracy": 0.9401565995525727,
+      "macro_f1": 0.9401511892900548
+    },
+    "produce_type": {
+      "accuracy": 0.9658836689038032,
+      "macro_f1": 0.9751077454118394
+    }
+  }
+}

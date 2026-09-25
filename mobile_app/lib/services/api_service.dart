@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
@@ -26,8 +27,12 @@ class ApiService {
   static Future<void> setBaseUrl(String url) async {
     final trimmed = url.trim();
     final uri = Uri.tryParse(trimmed);
-    if (uri == null || !uri.hasScheme || !['http', 'https'].contains(uri.scheme)) {
+    if (uri == null || !uri.hasScheme || !['http', 'https'].contains(uri.scheme) || uri.host.isEmpty) {
       throw ArgumentError('Invalid URL: must start with http:// or https://');
+    }
+    // Release builds block cleartext traffic (see AndroidManifest), so fail early.
+    if (kReleaseMode && uri.scheme != 'https') {
+      throw ArgumentError('Release builds require an https:// URL');
     }
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_prefKeyUrl, trimmed.replaceAll(RegExp(r'/+$'), ''));
@@ -86,16 +91,21 @@ class ApiService {
   // ── Helpers ─────────────────────────────────────────────────────────────────
 
   Future<XFile> _compress(File file) async {
-    final dir = await getTemporaryDirectory();
-    final target = p.join(dir.path, 'compressed_${DateTime.now().microsecondsSinceEpoch}_${p.basename(file.path)}');
-    final result = await FlutterImageCompress.compressAndGetFile(
-      file.absolute.path,
-      target,
-      quality: 82,
-      minWidth: 640,
-      minHeight: 640,
-    );
-    return result ?? XFile(file.path);
+    try {
+      final dir = await getTemporaryDirectory();
+      // Always a .jpg target: the plugin picks the output format from it.
+      final target = p.join(dir.path, 'compressed_${DateTime.now().microsecondsSinceEpoch}.jpg');
+      final result = await FlutterImageCompress.compressAndGetFile(
+        file.absolute.path,
+        target,
+        quality: 82,
+        minWidth: 640,
+        minHeight: 640,
+      );
+      return result ?? XFile(file.path);
+    } catch (e) {
+      throw ImageProcessingException('Could not read this image ($e). Try another photo.');
+    }
   }
 
   Future<T> _withRetry<T>(Future<T> Function() op) async {
@@ -104,7 +114,9 @@ class ApiService {
       try {
         return await op();
       } on ApiException catch (e) {
-        if (e.statusCode < 500) rethrow; // Don't retry 4xx
+        // Only 503 (model loading) is safe to retry: a 500 on POST /predict may
+        // already have logged a prediction server-side.
+        if (e.statusCode != 503) rethrow;
         if (++attempt > _maxRetries) rethrow;
         await Future.delayed(Duration(seconds: attempt));
       } catch (e) {
@@ -113,6 +125,32 @@ class ApiService {
       }
     }
   }
+}
+
+/// The server returns HTTP 200 with {"error": "OBJECT_NOT_RECOGNIZED"} when the
+/// image does not look like supported produce.
+bool isObjectNotRecognized(Map<String, dynamic> json) {
+  final err = json['error'];
+  return err == 'OBJECT_NOT_RECOGNIZED' ||
+      (err is Map && err['code'] == 'OBJECT_NOT_RECOGNIZED');
+}
+
+/// User-facing message for anything thrown while scanning.
+String describeError(Object e) {
+  if (e is ApiException) return e.toString();
+  if (e is ImageProcessingException) return e.message;
+  if (e is SocketException || e is TimeoutException || e is http.ClientException) {
+    return 'Could not connect to server. Check the API URL in Settings.';
+  }
+  if (e is FormatException) return 'Unexpected response from server.';
+  return 'Something went wrong: $e';
+}
+
+class ImageProcessingException implements Exception {
+  final String message;
+  ImageProcessingException(this.message);
+  @override
+  String toString() => message;
 }
 
 class ApiException implements Exception {

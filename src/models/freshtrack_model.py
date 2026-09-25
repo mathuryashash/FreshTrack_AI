@@ -5,195 +5,121 @@ import pytorch_lightning as pl
 
 from src.config import (
     NUM_FRESHNESS_CLASSES,
-    NUM_QUALITY_CLASSES,
+    NUM_PRODUCE_TYPES,
     LOSS_WEIGHTS,
+    DEFAULT_BACKBONE,
     DEFAULT_LEARNING_RATE,
+    DEFAULT_WEIGHT_DECAY,
+    DEFAULT_WARMUP_EPOCHS,
 )
+
+TASK_CLASSES = {"freshness": NUM_FRESHNESS_CLASSES, "produce_type": NUM_PRODUCE_TYPES}
+
+
+def entropy_bits(logits: torch.Tensor) -> torch.Tensor:
+    """Shannon entropy of softmax(logits) in bits, per row."""
+    log_p = torch.log_softmax(logits, dim=1)
+    return -(log_p.exp() * log_p).sum(dim=1) / torch.log(torch.tensor(2.0))
+
+
+def energy_score(logits: torch.Tensor) -> torch.Tensor:
+    """Negative free energy (Liu et al., 2020); higher = more in-distribution."""
+    return torch.logsumexp(logits, dim=1)
 
 
 class FreshTrackModel(pl.LightningModule):
+    """Shared timm backbone with one linear-MLP head per task.
+
+    tasks=("freshness", "produce_type") is the multi-task model; a single task
+    gives the single-task baseline with an identical backbone and head.
+    """
+
     def __init__(
         self,
-        num_freshness=NUM_FRESHNESS_CLASSES,
-        num_quality=NUM_QUALITY_CLASSES,
+        backbone=DEFAULT_BACKBONE,
+        tasks=("freshness", "produce_type"),
         learning_rate=DEFAULT_LEARNING_RATE,
+        weight_decay=DEFAULT_WEIGHT_DECAY,
+        warmup_epochs=DEFAULT_WARMUP_EPOCHS,
+        max_epochs=10,
+        pretrained=True,
     ):
         super().__init__()
         self.save_hyperparameters()
+        self.tasks = tuple(tasks)
 
-        # Backbone - EfficientNet-B0
         self.backbone = timm.create_model(
-            "efficientnet_b0", pretrained=True, num_classes=0, global_pool="avg"
+            backbone, pretrained=pretrained, num_classes=0, global_pool="avg"
         )
+        # MobileNetV3 has a conv head after the last stage: its pooled output
+        # (head_hidden_size=1280) is wider than num_features (960).
+        in_features = getattr(self.backbone, "head_hidden_size", None) or self.backbone.num_features
 
-        in_features = 1280  # EfficientNet-B0 feature size
-
-        # Multi-task heads
-        self.freshness_head = nn.Sequential(
-            nn.Dropout(0.3),
-            nn.Linear(in_features, 512),
-            nn.ReLU(),
-            nn.Dropout(0.2),
-            nn.Linear(512, num_freshness),
+        self.heads = nn.ModuleDict(
+            {
+                t: nn.Sequential(
+                    nn.Dropout(0.3),
+                    nn.Linear(in_features, 256),
+                    nn.ReLU(),
+                    nn.Dropout(0.2),
+                    nn.Linear(256, TASK_CLASSES[t]),
+                )
+                for t in self.tasks
+            }
         )
-
-        self.quality_head = nn.Sequential(
-            nn.Dropout(0.3),
-            nn.Linear(in_features, 256),
-            nn.ReLU(),
-            nn.Dropout(0.2),
-            nn.Linear(256, num_quality),
-        )
-
-        self.shelf_life_head = nn.Sequential(
-            nn.Dropout(0.3),
-            nn.Linear(in_features, 256),
-            nn.ReLU(),
-            nn.Linear(256, 128),
-            nn.ReLU(),
-            nn.Linear(128, 1),
-            nn.ReLU(),  # Positive days only
-        )
-
-        # Auxiliary task (rotation prediction)
-        self.rotation_head = nn.Linear(in_features, 4)
-
-        # Loss weights from config
-        self.w_fresh = LOSS_WEIGHTS["freshness"]
-        self.w_quality = LOSS_WEIGHTS["quality"]
-        self.w_shelf = LOSS_WEIGHTS["shelf_life"]
-        self.w_rot = LOSS_WEIGHTS["rotation"]
-
-        # Pre-create loss functions for efficiency
+        # Renormalise so single- and multi-task losses share one scale.
+        total = sum(LOSS_WEIGHTS[t] for t in self.tasks)
+        self.loss_weights = {t: LOSS_WEIGHTS[t] / total for t in self.tasks}
         self._cross_entropy = nn.CrossEntropyLoss()
-        self._mse_loss = nn.MSELoss()
 
     def forward(self, x):
         features = self.backbone(x)
+        return {t: head(features) for t, head in self.heads.items()}
 
-        freshness_logits = self.freshness_head(features)
-        quality_logits = self.quality_head(features)
-        shelf_life = self.shelf_life_head(features)
-        rotation_logits = self.rotation_head(features)
-
-        return freshness_logits, quality_logits, shelf_life, rotation_logits
-
-    def compute_entropy(self, logits):
-        """Compute Shannon entropy for OOD detection.
-        
-        Higher entropy = more uncertain prediction.
-        Returns entropy in bits (log base 2).
-        """
-        probs = torch.softmax(logits, dim=1)
-        eps = 1e-10
-        entropy = -torch.sum(probs * torch.log(probs + eps), dim=1)
-        return entropy / torch.log(torch.tensor(2.0, device=logits.device))
+    def _shared_step(self, batch, stage):
+        images, labels = batch
+        logits = self(images)
+        total = 0.0
+        for t in self.tasks:
+            loss = self._cross_entropy(logits[t], labels[t])
+            acc = (logits[t].argmax(dim=1) == labels[t]).float().mean()
+            total = total + self.loss_weights[t] * loss
+            self.log(f"{stage}_loss_{t}", loss)
+            self.log(f"{stage}_acc_{t}", acc, prog_bar=True)
+        self.log(f"{stage}_loss", total, prog_bar=True)
+        return total
 
     def training_step(self, batch, batch_idx):
-        images, labels = batch
-
-        fresh_logits, qual_logits, shelf_pred, rot_logits = self(images)
-
-        # Use pre-created loss functions
-        loss_fresh = self._cross_entropy(fresh_logits, labels["freshness"])
-        loss_qual = self._cross_entropy(qual_logits, labels["quality"])
-        loss_shelf = self._mse_loss(shelf_pred, labels["shelf_life"])
-        loss_rot = self._cross_entropy(rot_logits, labels["rotation"])
-
-        # Combined loss
-        total_loss = (
-            self.w_fresh * loss_fresh
-            + self.w_quality * loss_qual
-            + self.w_shelf * loss_shelf
-            + self.w_rot * loss_rot
-        )
-
-        # Logging
-        self.log("train_loss", total_loss, prog_bar=True)
-        self.log("train_loss_fresh", loss_fresh)
-        self.log("train_loss_quality", loss_qual)
-        self.log("train_loss_shelf", loss_shelf)
-
-        # Accuracy
-        fresh_acc = (fresh_logits.argmax(dim=1) == labels["freshness"]).float().mean()
-        self.log("train_acc_fresh", fresh_acc, prog_bar=True)
-
-        return total_loss
+        return self._shared_step(batch, "train")
 
     def validation_step(self, batch, batch_idx):
-        images, labels = batch
-
-        fresh_logits, qual_logits, shelf_pred, rot_logits = self(images)
-
-        # Use pre-created loss functions
-        loss_fresh = self._cross_entropy(fresh_logits, labels["freshness"])
-        loss_qual = self._cross_entropy(qual_logits, labels["quality"])
-        loss_shelf = self._mse_loss(shelf_pred, labels["shelf_life"])
-
-        total_loss = (
-            self.w_fresh * loss_fresh
-            + self.w_quality * loss_qual
-            + self.w_shelf * loss_shelf
-        )
-
-        # Metrics
-        fresh_acc = (fresh_logits.argmax(dim=1) == labels["freshness"]).float().mean()
-        mae_shelf = torch.abs(shelf_pred - labels["shelf_life"]).mean()
-
-        self.log("val_loss", total_loss, prog_bar=True)
-        self.log("val_acc_fresh", fresh_acc, prog_bar=True)
-        self.log("val_mae_shelf", mae_shelf, prog_bar=True)
-
-        return total_loss
+        return self._shared_step(batch, "val")
 
     def test_step(self, batch, batch_idx):
-        images, labels = batch
-
-        fresh_logits, qual_logits, shelf_pred, rot_logits = self(images)
-
-        loss_fresh = self._cross_entropy(fresh_logits, labels["freshness"])
-        loss_qual = self._cross_entropy(qual_logits, labels["quality"])
-        loss_shelf = self._mse_loss(shelf_pred, labels["shelf_life"])
-
-        total_loss = (
-            self.w_fresh * loss_fresh
-            + self.w_quality * loss_qual
-            + self.w_shelf * loss_shelf
-        )
-
-        fresh_acc = (fresh_logits.argmax(dim=1) == labels["freshness"]).float().mean()
-        mae_shelf = torch.abs(shelf_pred - labels["shelf_life"]).mean()
-
-        self.log("test_loss", total_loss, prog_bar=True)
-        self.log("test_acc_fresh", fresh_acc, prog_bar=True)
-        self.log("test_mae_shelf", mae_shelf, prog_bar=True)
-
-        return total_loss
+        return self._shared_step(batch, "test")
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(
-            self.parameters(), lr=self.hparams.learning_rate, weight_decay=1e-4
+            self.parameters(),
+            lr=self.hparams.learning_rate,
+            weight_decay=self.hparams.weight_decay,
         )
-
-        warmup_epochs = 2
-        scheduler = {
-            "scheduler": torch.optim.lr_scheduler.SequentialLR(
-                optimizer,
-                schedulers=[
-                    torch.optim.lr_scheduler.LinearLR(
-                        optimizer,
-                        start_factor=0.1,
-                        end_factor=1.0,
-                        total_iters=warmup_epochs,
-                    ),
-                    torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
-                        optimizer, T_0=10, T_mult=2, eta_min=1e-6
-                    ),
-                ],
-                milestones=[warmup_epochs],
-            ),
-            "interval": "epoch",
-            "monitor": "val_loss",
+        warmup = self.hparams.warmup_epochs
+        scheduler = torch.optim.lr_scheduler.SequentialLR(
+            optimizer,
+            schedulers=[
+                torch.optim.lr_scheduler.LinearLR(
+                    optimizer, start_factor=0.1, end_factor=1.0, total_iters=warmup
+                ),
+                torch.optim.lr_scheduler.CosineAnnealingLR(
+                    optimizer,
+                    T_max=max(1, self.hparams.max_epochs - warmup),
+                    eta_min=1e-6,
+                ),
+            ],
+            milestones=[warmup],
+        )
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {"scheduler": scheduler, "interval": "epoch"},
         }
-
-        return {"optimizer": optimizer, "lr_scheduler": scheduler}

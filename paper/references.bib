@@ -1,0 +1,260 @@
+% references.bib -- verified 2026-09-25 against Crossref, publisher pages,
+% PMLR/NeurIPS proceedings, arXiv API, Zenodo API and the Kaggle dataset API.
+% Fields that could not be verified are omitted.
+
+% ---------------------------------------------------------------- Backbones
+@inproceedings{tan2019efficientnet,
+  author    = {Tan, Mingxing and Le, Quoc},
+  title     = {{EfficientNet}: Rethinking Model Scaling for Convolutional Neural Networks},
+  booktitle = {Proceedings of the 36th International Conference on Machine Learning},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {97},
+  pages     = {6105--6114},
+  publisher = {PMLR},
+  year      = {2019},
+  url       = {https://proceedings.mlr.press/v97/tan19a.html}
+}
+
+@inproceedings{howard2019mobilenetv3,
+  author    = {Howard, Andrew and Sandler, Mark and Chen, Bo and Wang, Weijun and Chen, Liang-Chieh and Tan, Mingxing and Chu, Grace and Vasudevan, Vijay and Zhu, Yukun and Pang, Ruoming and Adam, Hartwig and Le, Quoc},
+  title     = {Searching for {MobileNetV3}},
+  booktitle = {Proceedings of the IEEE/CVF International Conference on Computer Vision (ICCV)},
+  pages     = {1314--1324},
+  publisher = {IEEE},
+  year      = {2019},
+  doi       = {10.1109/ICCV.2019.00140}
+}
+
+@inproceedings{deng2009imagenet,
+  author    = {Deng, Jia and Dong, Wei and Socher, Richard and Li, Li-Jia and Li, Kai and Fei-Fei, Li},
+  title     = {{ImageNet}: A Large-Scale Hierarchical Image Database},
+  booktitle = {Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages     = {248--255},
+  publisher = {IEEE},
+  year      = {2009},
+  doi       = {10.1109/CVPR.2009.5206848}
+}
+
+@misc{wightman2019timm,
+  author       = {Wightman, Ross},
+  title        = {{PyTorch} Image Models},
+  howpublished = {\url{https://github.com/huggingface/pytorch-image-models}},
+  year         = {2019},
+  doi          = {10.5281/zenodo.4414861},
+  note         = {GitHub repository. Accessed: 2026-09-25}
+}
+
+% ------------------------------------------------------- Multi-task learning
+@article{caruana1997multitask,
+  author  = {Caruana, Rich},
+  title   = {Multitask Learning},
+  journal = {Machine Learning},
+  volume  = {28},
+  number  = {1},
+  pages   = {41--75},
+  year    = {1997},
+  doi     = {10.1023/A:1007379606734}
+}
+
+@misc{ruder2017overview,
+  author       = {Ruder, Sebastian},
+  title        = {An Overview of Multi-Task Learning in Deep Neural Networks},
+  howpublished = {arXiv preprint arXiv:1706.05098},
+  year         = {2017},
+  url          = {https://arxiv.org/abs/1706.05098}
+}
+
+% ------------------------------------------------ OOD detection, calibration
+@inproceedings{hendrycks2017baseline,
+  author    = {Hendrycks, Dan and Gimpel, Kevin},
+  title     = {A Baseline for Detecting Misclassified and Out-of-Distribution Examples in Neural Networks},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2017},
+  url       = {https://arxiv.org/abs/1610.02136}
+}
+
+@inproceedings{liu2020energy,
+  author    = {Liu, Weitang and Wang, Xiaoyun and Owens, John and Li, Yixuan},
+  title     = {Energy-based Out-of-distribution Detection},
+  booktitle = {Advances in Neural Information Processing Systems},
+  volume    = {33},
+  pages     = {21464--21475},
+  publisher = {Curran Associates, Inc.},
+  year      = {2020},
+  url       = {https://proceedings.neurips.cc/paper/2020/hash/f5496252609c43eb8a3d147ab9b9c006-Abstract.html}
+}
+
+@inproceedings{guo2017calibration,
+  author    = {Guo, Chuan and Pleiss, Geoff and Sun, Yu and Weinberger, Kilian Q.},
+  title     = {On Calibration of Modern Neural Networks},
+  booktitle = {Proceedings of the 34th International Conference on Machine Learning},
+  series    = {Proceedings of Machine Learning Research},
+  volume    = {70},
+  pages     = {1321--1330},
+  publisher = {PMLR},
+  year      = {2017},
+  url       = {https://proceedings.mlr.press/v70/guo17a.html}
+}
+
+% ------------------------------------------------------------------ Leakage
+@article{kaufman2012leakage,
+  author  = {Kaufman, Shachar and Rosset, Saharon and Perlich, Claudia and Stitelman, Ori},
+  title   = {Leakage in Data Mining: Formulation, Detection, and Avoidance},
+  journal = {ACM Transactions on Knowledge Discovery from Data},
+  volume  = {6},
+  number  = {4},
+  pages   = {1--21},
+  year    = {2012},
+  doi     = {10.1145/2382577.2382579}
+}
+
+@article{kapoor2023leakage,
+  author  = {Kapoor, Sayash and Narayanan, Arvind},
+  title   = {Leakage and the Reproducibility Crisis in Machine-Learning-Based Science},
+  journal = {Patterns},
+  volume  = {4},
+  number  = {9},
+  pages   = {100804},
+  year    = {2023},
+  doi     = {10.1016/j.patter.2023.100804}
+}
+
+% ------------------------------------------------ Explainability, training
+@inproceedings{selvaraju2017gradcam,
+  author    = {Selvaraju, Ramprasaath R. and Cogswell, Michael and Das, Abhishek and Vedantam, Ramakrishna and Parikh, Devi and Batra, Dhruv},
+  title     = {{Grad-CAM}: Visual Explanations from Deep Networks via Gradient-Based Localization},
+  booktitle = {Proceedings of the IEEE International Conference on Computer Vision (ICCV)},
+  pages     = {618--626},
+  publisher = {IEEE},
+  year      = {2017},
+  doi       = {10.1109/ICCV.2017.74}
+}
+
+@inproceedings{loshchilov2019adamw,
+  author    = {Loshchilov, Ilya and Hutter, Frank},
+  title     = {Decoupled Weight Decay Regularization},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2019},
+  url       = {https://arxiv.org/abs/1711.05101}
+}
+
+@inproceedings{loshchilov2017sgdr,
+  author    = {Loshchilov, Ilya and Hutter, Frank},
+  title     = {{SGDR}: Stochastic Gradient Descent with Warm Restarts},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2017},
+  url       = {https://arxiv.org/abs/1608.03983}
+}
+
+@book{efron1994bootstrap,
+  author    = {Efron, Bradley and Tibshirani, Robert J.},
+  title     = {An Introduction to the Bootstrap},
+  publisher = {Chapman and Hall/CRC},
+  year      = {1994},
+  doi       = {10.1201/9780429246593}
+}
+
+% ----------------------------------------------------------------- Datasets
+@techreport{krizhevsky2009cifar,
+  author      = {Krizhevsky, Alex},
+  title       = {Learning Multiple Layers of Features from Tiny Images},
+  institution = {University of Toronto},
+  year        = {2009},
+  url         = {https://www.cs.toronto.edu/~kriz/learning-features-2009-TR.pdf},
+}
+
+@misc{kaggle_fresh_stale,
+  author       = {Potdar, Raghav R.},
+  title        = {Fresh and Stale Images of Fruits and Vegetables},
+  howpublished = {\url{https://www.kaggle.com/datasets/raghavrpotdar/fresh-and-stale-images-of-fruits-and-vegetables}},
+  year         = {2021},
+  note         = {Kaggle dataset, CC0 license. Accessed: 2026-09-25}
+}
+
+@misc{kaggle_fruit_veg_recognition,
+  author       = {Seth, Kritik},
+  title        = {Fruits and Vegetables Image Recognition Dataset},
+  howpublished = {\url{https://www.kaggle.com/datasets/kritikseth/fruit-and-vegetable-image-recognition}},
+  year         = {2022},
+  note         = {Kaggle dataset, CC0 license. Accessed: 2026-09-25}
+}
+
+@misc{kalluri2018fruits,
+  author       = {Kalluri, Sriram Reddy},
+  title        = {Fruits Fresh and Rotten for Classification},
+  howpublished = {\url{https://www.kaggle.com/datasets/sriramr/fruits-fresh-and-rotten-for-classification}},
+  year         = {2018},
+  note         = {Kaggle dataset. Accessed: 2026-09-25}
+}
+
+@article{meshram2022fruitnet,
+  author  = {Meshram, Vishal and Patil, Kailas},
+  title   = {{FruitNet}: {Indian} Fruits Image Dataset with Quality for Machine Learning Applications},
+  journal = {Data in Brief},
+  volume  = {40},
+  pages   = {107686},
+  year    = {2022},
+  doi     = {10.1016/j.dib.2021.107686}
+}
+
+@misc{fruqdb2022,
+  author       = {Abayomi-Alli, Olusola and Dama{\v{s}}evi{\v{c}}ius, Robertas},
+  title        = {Fruit Quality Datasets ({FruQ-DB})},
+  howpublished = {\url{https://zenodo.org/records/7224690}},
+  year         = {2022},
+  doi          = {10.5281/zenodo.7224690},
+  note         = {Zenodo, version v1. Accessed: 2026-09-25}
+}
+
+% ------------------------------------------- Freshness / shelf-life work
+@article{noisyvit2025,
+  author  = {Esfandiari Fard, Siavash and Ghosh, Tonmoy and Sazonov, Edward},
+  title   = {Multi-Task {NoisyViT} for Enhanced Fruit and Vegetable Freshness Detection and Type Classification},
+  journal = {Sensors},
+  volume  = {25},
+  number  = {19},
+  pages   = {5955},
+  year    = {2025},
+  doi     = {10.3390/s25195955}
+}
+
+@misc{shelflife2026arxiv,
+  author       = {Kanulla, Mounika and Dadigi, Rajasree and Thota, Sailaja and Yelleti, Vivek},
+  title        = {Transformer based Multi-task Fusion Network for Food Spoilage Detection and Shelf life Forecasting},
+  howpublished = {arXiv preprint arXiv:2601.13665},
+  year         = {2026},
+  url          = {https://arxiv.org/abs/2601.13665}
+}
+
+@article{amin2023freshness,
+  author  = {Amin, Umer and Shahzad, Muhammad Imran and Shahzad, Aamir and Shahzad, Mohsin and Khan, Uzair and Mahmood, Zahid},
+  title   = {Automatic Fruits Freshness Classification Using {CNN} and Transfer Learning},
+  journal = {Applied Sciences},
+  volume  = {13},
+  number  = {14},
+  pages   = {8087},
+  year    = {2023},
+  doi     = {10.3390/app13148087}
+}
+
+@article{kang2022ensemble,
+  author  = {Kang, Jaeyong and Gwak, Jeonghwan},
+  title   = {Ensemble of Multi-Task Deep Convolutional Neural Networks Using Transfer Learning for Fruit Freshness Classification},
+  journal = {Multimedia Tools and Applications},
+  volume  = {81},
+  number  = {16},
+  pages   = {22355--22377},
+  year    = {2022},
+  doi     = {10.1007/s11042-021-11282-4}
+}
+
+@article{makmud2024rotten,
+  author  = {Makmud, Singgih Tulus and Haryanto, Adrian Natanael and Prasetyo, Simeon Yuda},
+  title   = {Improving Rotten Fruit Classification Accuracy through Fusion of Multiple Pretrained {CNN} Models},
+  journal = {Engineering and Applied Science Research},
+  volume  = {51},
+  number  = {3},
+  pages   = {313--320},
+  year    = {2024},
+  url     = {https://ph01.tci-thaijo.org/index.php/easr/article/view/253139},
+}

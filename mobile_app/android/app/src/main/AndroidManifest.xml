@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.INTERNET" />
     <application
-        android:label="freshtrack_mobile"
+        android:label="FreshTrack"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

@@ -24,6 +24,7 @@ from fastapi import (
     UploadFile,
     HTTPException,
     Request,
+    Response,
     Depends,
     Query,
     status,
@@ -36,7 +37,7 @@ from pydantic import BaseModel, field_validator, validator
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
-from PIL import Image
+from PIL import Image, ImageOps
 
 try:
     import magic
@@ -45,39 +46,38 @@ except ImportError:
 
 Image.MAX_IMAGE_PIXELS = 50_000_000
 import torch
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
 import numpy as np
 import uvicorn
 
 sys.path.append(os.getcwd())
 
-from src.models.freshtrack_model import FreshTrackModel
+from src.models.freshtrack_model import FreshTrackModel, energy_score, entropy_bits
+from src.data.dataset import get_val_transforms
 from src.api.database import (
     init_db,
     log_prediction,
     log_feedback,
     get_recent_predictions,
     get_stats,
+    count_predictions,
     get_uncertain_predictions,
 )
 from src.config import (
     MODEL_CHECKPOINT,
+    MODEL_META,
     FRESHNESS_LABELS,
-    QUALITY_LABELS,
+    PRODUCE_TYPES,
+    derive_quality,
+    derive_shelf_life,
+    IMAGE_SIZE,
     NORMALIZE_MEAN,
     NORMALIZE_STD,
-    IMAGE_SIZE,
     MAX_UPLOAD_SIZE_MB,
     ALLOWED_EXTENSIONS,
     API_KEY,
     TRUSTED_HOSTS,
     CORS_ORIGINS,
 )
-
-# OOD Detection Configuration
-OOD_ENTROPY_THRESHOLD = 1.5  # Bits - above this indicates uncertain/OOD
-OOD_CONFIDENCE_THRESHOLD = 0.3  # Below this indicates uncertain/OOD
 
 # Magic bytes for image validation (if python-magic not available, use Pillow)
 IMAGE_MAGIC_BYTES = {
@@ -129,13 +129,16 @@ def verify_api_key(key: str = Depends(api_key_header)):
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 model = None
 model_lock = Lock()  # Thread lock for concurrent inference
+model_version = "unknown"
+checkpoint_hash = "unknown"
+model_meta: Dict[str, Any] = {}
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Load model on startup with optimizations, clean up on shutdown."""
-    global model
-    import asyncio
+    """Load model on startup, clean up on shutdown."""
+    global model, model_version, checkpoint_hash, model_meta
+    import json as _json
 
     init_db()
 
@@ -149,34 +152,56 @@ async def lifespan(app: FastAPI):
             _pathlib.Path("models/checkpoints").resolve(),
             _pathlib.Path("checkpoints").resolve(),
         ]
-        if not any(str(ckpt_path).startswith(str(d)) for d in allowed_dirs):
+        if not any(ckpt_path.is_relative_to(d) for d in allowed_dirs):
             raise RuntimeError(
                 f"MODEL_CHECKPOINT outside allowed directories: {ckpt_path}"
             )
 
-        model = FreshTrackModel.load_from_checkpoint(MODEL_CHECKPOINT)
-        model.to(device)
-        model.eval()
+        # Compute checkpoint hash for versioning
+        with open(MODEL_CHECKPOINT, "rb") as f:
+            checkpoint_hash = hashlib.sha256(f.read()).hexdigest()[:12]
 
-        # Optimize model for inference
+        # Labels, preprocessing and the OOD threshold were written next to the
+        # checkpoint by src/training/evaluate.py; refuse to serve without them.
+        meta = _json.loads(_pathlib.Path(MODEL_META).read_text())
+        expected = {
+            "produce_types": PRODUCE_TYPES,
+            "freshness_labels": [FRESHNESS_LABELS[i] for i in sorted(FRESHNESS_LABELS)],
+            "image_size": IMAGE_SIZE,
+            "normalize_mean": list(NORMALIZE_MEAN),
+            "normalize_std": list(NORMALIZE_STD),
+        }
+        mismatched = [k for k, v in expected.items() if meta.get(k) != v]
+        if mismatched or meta.get("ood_score") != "energy_produce_type":
+            raise RuntimeError(f"model_meta.json does not match src/config.py: {mismatched}")
+
+        # weights_only: never unpickle arbitrary objects from a mounted checkpoint
+        loaded = FreshTrackModel.load_from_checkpoint(
+            MODEL_CHECKPOINT, pretrained=False, weights_only=True, map_location=device
+        )
+        loaded.to(device).eval()
         if device.type == "cuda":
-            # Enable cuDNN benchmarking for consistent input sizes
             torch.backends.cudnn.benchmark = True
-            logger.info("CUDA benchmark mode enabled")
 
-        # Try to use torch.compile if available (PyTorch 2.0+)
-        if hasattr(torch, "compile"):
-            try:
-                model = torch.compile(model, mode="reduce-overhead")
-                logger.info("Model compiled with torch.compile")
-            except Exception as e:
-                logger.warning(f"torch.compile not available: {e}")
+        # Startup gate: a checkpoint that cannot run inference must not be served.
+        with torch.no_grad():
+            out = loaded(torch.randn(1, 3, IMAGE_SIZE, IMAGE_SIZE, device=device))
+        if set(out) != {"freshness", "produce_type"} or not all(
+            torch.isfinite(v).all() for v in out.values()
+        ):
+            raise RuntimeError(f"Dummy inference failed: heads={sorted(out)}")
 
-        logger.info("Model loaded successfully and optimized for inference.")
+        model_meta = meta
+        model_version = f"v2.0.0-{meta['backbone']}-{checkpoint_hash[:8]}"
+        model = loaded
+        logger.info(f"Model loaded: version={model_version}, checkpoint_hash={checkpoint_hash}")
     except Exception as e:
+        model = None
         logger.error(f"Failed to load model: {e}")
     yield
     model = None
+    model_version = "unknown"
+    checkpoint_hash = "unknown"
     logger.info("Model unloaded.")
 
 
@@ -220,10 +245,11 @@ _app_description = """
 Intelligent fruit quality assessment system using multi-task deep learning.
 
 ### Features
-- **Freshness Detection**: Classify fruit as Fresh, Semi-ripe, Overripe, or Rotten
-- **Quality Grading**: Rate quality as High (A), Medium (B), or Low (C)
-- **Shelf-life Prediction**: Estimate remaining shelf life in days
-- **Out-of-Distribution Detection**: Identifies non-fruit images
+- **Freshness Detection** (learned): Fresh or Stale
+- **Produce Type** (learned): apple, banana, bitter gourd, capsicum, orange, tomato
+- **Quality Grade** (heuristic, derived from P(fresh); not a learned grade)
+- **Shelf-life Estimate** (heuristic reference days x P(fresh); not validated)
+- **Out-of-Distribution Detection**: energy score on the produce-type head
 
 ### Authentication
 Set `API_KEY` environment variable to enable API key authentication.
@@ -263,7 +289,7 @@ if TRUSTED_HOSTS:
 # CORS — configurable via environment for production
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=CORS_ORIGINS if CORS_ORIGINS else ["*"],
+    allow_origins=CORS_ORIGINS or [],  # fail closed; set CORS_ORIGINS for browser clients
     allow_credentials=False,
     allow_methods=["GET", "POST"],
     allow_headers=["X-API-Key", "Content-Type"],
@@ -319,15 +345,8 @@ async def add_security_headers(request: Request, call_next):
 
 
 # ── Transforms (built once) ─────────────────────────────────────────────
-@lru_cache(maxsize=1)
-def get_transforms():
-    return A.Compose(
-        [
-            A.Resize(height=IMAGE_SIZE, width=IMAGE_SIZE),
-            A.Normalize(mean=NORMALIZE_MEAN, std=NORMALIZE_STD),
-            ToTensorV2(),
-        ]
-    )
+# Same pipeline as evaluation, imported so train/serve preprocessing cannot drift.
+get_transforms = lru_cache(maxsize=1)(get_val_transforms)
 
 
 # ── Pydantic schemas ──────────────────────────────────────────────────────
@@ -375,14 +394,25 @@ class FeedbackPayload(BaseModel):
 
 
 class PredictionResponse(BaseModel):
-    """Response model for predictions."""
+    """Response model for predictions.
+
+    quality and shelf_life_days are heuristics derived from P(fresh) and the
+    produce type; the *_is_heuristic flags make that explicit to clients.
+    """
 
     freshness: str
     freshness_confidence: float
+    produce_type: str
+    produce_type_confidence: float
     quality: str
+    quality_is_heuristic: bool = True
     shelf_life_days: float
+    shelf_life_is_heuristic: bool = True
     entropy_score: float
+    ood_score: float
     prediction_id: Optional[str] = None
+    model_version: Optional[str] = None
+    checkpoint_hash: Optional[str] = None
 
 
 class HealthResponse(BaseModel):
@@ -392,6 +422,8 @@ class HealthResponse(BaseModel):
     model_loaded: bool
     device: str
     timestamp: str
+    model_version: Optional[str] = None
+    checkpoint_hash: Optional[str] = None
 
 
 class PaginationParams:
@@ -408,16 +440,12 @@ class PaginationParams:
 
 
 # ── Helper Functions ──────────────────────────────────────────────────────
-def _compute_entropy(probs):
-    """Compute Shannon entropy in bits for OOD detection."""
-    eps = 1e-10
-    entropy = -torch.sum(probs * torch.log(probs + eps), dim=1)
-    return (entropy / torch.log(torch.tensor(2.0, device=probs.device))).item()
-
-
-def _is_ood(entropy, max_confidence):
-    """Determine if input is out-of-distribution (not a fruit)."""
-    return entropy > OOD_ENTROPY_THRESHOLD or max_confidence < OOD_CONFIDENCE_THRESHOLD
+def _ood_score(logits: Dict[str, torch.Tensor]) -> float:
+    """Score named in model_meta.json; higher = more in-distribution."""
+    name = model_meta["ood_score"]
+    if name == "energy_produce_type":
+        return float(energy_score(logits["produce_type"]).item())
+    raise RuntimeError(f"Unsupported OOD score {name!r}")
 
 
 def _validate_image_bytes(contents: bytes) -> Image.Image:
@@ -442,8 +470,9 @@ def _validate_image_bytes(contents: bytes) -> Image.Image:
     try:
         image = Image.open(io.BytesIO(contents))
         image.verify()  # raises on corrupt/invalid files
-        # Re-open for actual use after verify()
-        image = Image.open(io.BytesIO(contents)).convert("RGB")
+        # Re-open for actual use after verify(); apply EXIF orientation so
+        # phone photos match training, where cv2.imread applies it.
+        image = ImageOps.exif_transpose(Image.open(io.BytesIO(contents))).convert("RGB")
         return image
     except Exception as e:
         logger.warning(f"Image validation failed: {e}")
@@ -460,25 +489,34 @@ def read_root():
     return {
         "message": "FreshTrack AI API is running",
         "version": "1.1.0",
+        "model_version": model_version if model is not None else None,
+        "checkpoint_hash": checkpoint_hash if model is not None else None,
         "docs": "/docs" if _debug else "disabled",
     }
 
 
 @app.get("/health", tags=["monitoring"])
 @limiter.limit("10/minute")
-async def health_check(request: Request):
-    """Health check for container orchestration and load balancers."""
+async def health_check(request: Request, response: Response):
+    """Health check for container orchestration and load balancers.
+
+    Returns 503 when the model is not loaded so `curl -f` probes fail.
+    """
     import datetime
 
+    if model is None:
+        response.status_code = status.HTTP_503_SERVICE_UNAVAILABLE
     return HealthResponse(
         status="healthy" if model is not None else "degraded",
         model_loaded=model is not None,
         device=str(device),
         timestamp=datetime.datetime.utcnow().isoformat() + "Z",
+        model_version=model_version if model is not None else None,
+        checkpoint_hash=checkpoint_hash if model is not None else None,
     )
 
 
-@app.get("/metrics", tags=["monitoring"])
+@app.get("/metrics", tags=["monitoring"], dependencies=[Depends(verify_api_key)])
 @limiter.limit("10/minute")
 async def metrics(request: Request):
     """
@@ -537,6 +575,8 @@ freshtrack_system_timestamp {int(time.time())}
             "model": {
                 "loaded": model_loaded,
                 "device": model_device,
+                "version": model_version if model_loaded else None,
+                "checkpoint_hash": checkpoint_hash if model_loaded else None,
             },
             "system": {
                 "cpu_percent": cpu_percent if "cpu_percent" in locals() else None,
@@ -548,7 +588,7 @@ freshtrack_system_timestamp {int(time.time())}
     )
 
 
-@app.post("/predict", tags=["predictions"], response_model=PredictionResponse)
+@app.post("/predict", tags=["predictions"], response_model=PredictionResponse, dependencies=[Depends(verify_api_key)])
 @limiter.limit("30/minute")
 async def predict(request: Request, file: UploadFile = File(...)):
     """
@@ -606,67 +646,73 @@ async def predict(request: Request, file: UploadFile = File(...)):
     t0 = time.perf_counter()
     with model_lock:
         with torch.no_grad():
-            fresh_logits, qual_logits, shelf_pred, _ = model(tensor)
+            logits = {k: v.float().cpu() for k, v in model(tensor).items()}
     inference_ms = (time.perf_counter() - t0) * 1000
 
-    fresh_probs = torch.softmax(fresh_logits, dim=1)
-    fresh_idx = int(torch.argmax(fresh_probs, dim=1).item())
-    fresh_conf = float(fresh_probs[0][fresh_idx])
+    fresh_probs = torch.softmax(logits["freshness"], dim=1)[0]
+    fresh_idx = int(fresh_probs.argmax())
+    fresh_conf = float(fresh_probs[fresh_idx])
+    p_fresh = float(fresh_probs[0])  # index 0 == "Fresh"
 
-    qual_probs = torch.softmax(qual_logits, dim=1)
-    qual_idx = int(torch.argmax(qual_probs, dim=1).item())
+    type_probs = torch.softmax(logits["produce_type"], dim=1)[0]
+    type_idx = int(type_probs.argmax())
+    produce_type = PRODUCE_TYPES[type_idx]
 
-    # Compute entropy for OOD detection
-    entropy = _compute_entropy(fresh_probs)
-    max_confidence = fresh_conf
+    entropy = float(entropy_bits(logits["freshness"]).item())
+    ood_score = _ood_score(logits)
 
     logger.info(
-        f"[{request_id}] Prediction: freshness=%s (%.2f), quality=%s, shelf_life=%.1f, entropy=%.2f",
-        FRESHNESS_LABELS.get(fresh_idx, "Unknown"),
+        f"[{request_id}] Prediction: freshness=%s (%.2f), type=%s (%.2f), ood_score=%.2f",
+        FRESHNESS_LABELS[fresh_idx],
         fresh_conf,
-        QUALITY_LABELS.get(qual_idx, "Unknown"),
-        shelf_pred.item(),
-        entropy,
+        produce_type,
+        float(type_probs[type_idx]),
+        ood_score,
     )
 
-    # Check for OOD (Object Not Recognized)
-    is_ood = _is_ood(entropy, max_confidence)
-
-    if is_ood:
-        logger.info(
-            f"[{request_id}] OOD detected: entropy=%.2f, max_conf=%.2f",
-            entropy,
-            max_confidence,
-        )
+    # Object Not Recognized: returned as a 200 JSONResponse so it bypasses
+    # response_model validation (the client checks the "error" field).
+    if ood_score < model_meta["ood_threshold"]:
+        logger.info(f"[{request_id}] OOD detected: score=%.2f", ood_score)
         result = {
             "error": "OBJECT_NOT_RECOGNIZED",
-            "message": "The input image does not appear to contain a recognizable fruit.",
+            "message": "The image does not appear to show a supported fruit or vegetable.",
             "details": {
-                "entropy_score": round(entropy, 4),
-                "max_confidence": round(max_confidence, 4),
+                "ood_score": round(ood_score, 4),
+                "ood_threshold": round(model_meta["ood_threshold"], 4),
             },
+            "model_version": model_version,
+            "checkpoint_hash": checkpoint_hash,
         }
         # Still log to database for active learning
         try:
-            pred_id = log_prediction(
+            result["prediction_id"] = log_prediction(
                 freshness="Unknown",
-                freshness_conf=max_confidence,
+                freshness_conf=fresh_conf,
                 quality="Unknown",
                 shelf_life_days=0.0,
                 inference_ms=inference_ms,
                 entropy_score=entropy,
+                ood_score=ood_score,
+                model_version=model_version,
             )
-            result["prediction_id"] = pred_id
         except Exception as db_err:
             logger.warning(f"[{request_id}] DB log failed: %s", db_err)
-        return result
+        return JSONResponse(status_code=status.HTTP_200_OK, content=result)
 
     result = {
-        "freshness": FRESHNESS_LABELS.get(fresh_idx, "Unknown"),
+        "freshness": FRESHNESS_LABELS[fresh_idx],
         "freshness_confidence": round(fresh_conf, 4),
-        "quality": QUALITY_LABELS.get(qual_idx, "Unknown"),
-        "shelf_life_days": round(float(shelf_pred.item()), 1),
+        "produce_type": produce_type,
+        "produce_type_confidence": round(float(type_probs[type_idx]), 4),
+        "quality": derive_quality(p_fresh),
+        "quality_is_heuristic": True,
+        "shelf_life_days": derive_shelf_life(produce_type, p_fresh),
+        "shelf_life_is_heuristic": True,
         "entropy_score": round(entropy, 4),
+        "ood_score": round(ood_score, 4),
+        "model_version": model_version,
+        "checkpoint_hash": checkpoint_hash,
     }
 
     # Persist to database
@@ -677,6 +723,11 @@ async def predict(request: Request, file: UploadFile = File(...)):
             quality=result["quality"],
             shelf_life_days=result["shelf_life_days"],
             inference_ms=inference_ms,
+            entropy_score=result["entropy_score"],
+            produce_type=result["produce_type"],
+            produce_type_conf=result["produce_type_confidence"],
+            ood_score=result["ood_score"],
+            model_version=model_version,
         )
         result["prediction_id"] = pred_id
     except Exception as db_err:
@@ -685,7 +736,7 @@ async def predict(request: Request, file: UploadFile = File(...)):
     return result
 
 
-@app.post("/feedback", tags=["feedback"])
+@app.post("/feedback", tags=["feedback"], dependencies=[Depends(verify_api_key)])
 @limiter.limit("10/minute")
 async def submit_feedback(request: Request, payload: FeedbackPayload):
     """
@@ -718,7 +769,7 @@ async def submit_feedback(request: Request, payload: FeedbackPayload):
     return {"status": "success", "message": "Feedback recorded. Thank you!"}
 
 
-@app.get("/history", tags=["predictions"])
+@app.get("/history", tags=["predictions"], dependencies=[Depends(verify_api_key)])
 @limiter.limit("30/minute")
 async def prediction_history(
     request: Request,
@@ -739,7 +790,7 @@ async def prediction_history(
     predictions = get_recent_predictions(
         limit, offset, freshness_filter=freshness or ""
     )
-    total = get_stats()["total_predictions"]
+    total = count_predictions(freshness or "")
 
     return {
         "predictions": predictions,
@@ -752,19 +803,19 @@ async def prediction_history(
     }
 
 
-@app.get("/stats", tags=["monitoring"])
+@app.get("/stats", tags=["monitoring"], dependencies=[Depends(verify_api_key)])
 @limiter.limit("30/minute")
 async def prediction_stats(request: Request):
     """Get aggregated prediction statistics."""
     return get_stats()
 
 
-@app.get("/uncertain-predictions", tags=["predictions"])
+@app.get("/uncertain-predictions", tags=["predictions"], dependencies=[Depends(verify_api_key)])
 @limiter.limit("10/minute")
 async def uncertain_predictions(
     request: Request,
     limit: int = Query(default=100, ge=1, le=500),
-    threshold: float = Query(default=1.5, ge=0.0, le=5.0),
+    threshold: float = Query(default=0.9, ge=0.0, le=1.0),  # bits; binary max = 1
 ):
     """
     Get predictions with high entropy (uncertain predictions).

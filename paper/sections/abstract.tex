@@ -1,0 +1,24 @@
+Public fresh/rotten produce datasets are routinely reported with accuracies
+close to 100\%. We show that, for a widely used Kaggle dataset, much of this
+figure is an artefact of how the data are split and how the data were
+collected. Its \NImages{} images derive from only \NGroups{} source
+photographs taken in \NSessions{} (file-name-inferred) capture sessions. A per-file split places a
+sibling of \NaiveLeakPct\% of test images in training, and an EfficientNet-B0
+then scores \NaiveFreshAcc\% on freshness. Grouping copies by source photo
+gives \MtlFreshAcc\%, yet \SessionSharePct\% of test images still share a
+capture session with training. Holding out whole sessions lowers freshness
+accuracy to \SessFreshAcc\%, and expected calibration error grows from
+\MtlFreshEce\% to \SessFreshEce\%. The loss is concentrated in produce types
+whose fresh and stale photographs came from different cameras or messaging
+apps: on an unseen session of stale capsicum the model is correct on only
+\SessHeldCapsicumStale\% of images, suggesting it has partly learned the
+acquisition source rather than freshness. On the photo-grouped split, joint
+training of freshness and produce type shows no difference from separate
+single-task models that three seeds can resolve, and MobileNetV3-Large matches EfficientNet-B0 (\MnvFreshAcc\% vs.
+\MtlFreshAcc\%) at \MnvCpuMs{}\,ms CPU latency. An energy-score gate on the
+produce-type head rejects \MnvGateFarOODRejectRate\% of non-produce images and
+\MnvGateNearOODRejectRate\% of unseen produce while accepting
+\MnvGateTestIdAcceptRate\% of in-distribution images; produce-type accuracy on
+an external dataset is only \MnvCrossTypeAcc\%. We release splits and code, and
+argue that shelf life and quality grade, which have no ground truth in these
+datasets, should not be presented as learned outputs.

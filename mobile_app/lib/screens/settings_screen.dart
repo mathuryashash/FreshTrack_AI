@@ -27,7 +27,16 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _save() async {
-    await ApiService.setBaseUrl(_urlCtrl.text.trim());
+    try {
+      await ApiService.setBaseUrl(_urlCtrl.text.trim());
+    } on ArgumentError catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('${e.message}'),
+        backgroundColor: const Color(0xFFB71C1C),
+      ));
+      return;
+    }
     await ApiService.setApiKey(_keyCtrl.text.trim());
     setState(() { _saved = true; _healthy = null; });
     Future.delayed(const Duration(seconds: 2), () {
@@ -111,7 +120,7 @@ class _SectionLabel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Text(text, style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 1.2));
+    return Text(text, style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 1.2));
   }
 }
 
@@ -179,9 +188,9 @@ class _StatusBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
+        color: color.withValues(alpha: 0.08),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Row(children: [
         Icon(healthy ? Icons.check_circle_outline : Icons.error_outline, color: color, size: 18),
@@ -224,9 +233,9 @@ class _HostingTile extends StatelessWidget {
         Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text(info.name, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
           const SizedBox(height: 2),
-          Text(info.description, style: TextStyle(color: Colors.white.withOpacity(0.4), fontSize: 12)),
+          Text(info.description, style: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 12)),
         ])),
-        Text(info.url, style: TextStyle(color: Colors.white.withOpacity(0.25), fontSize: 10)),
+        Text(info.url, style: TextStyle(color: Colors.white.withValues(alpha: 0.25), fontSize: 10)),
       ]),
     );
   }

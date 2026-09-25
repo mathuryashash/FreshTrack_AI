@@ -3,13 +3,18 @@
 import os
 
 # ── Label mappings (single source of truth) ──────────────────────────────────
-# NOTE: The dataset currently only provides Fresh/Rotten labels.
-# Semi-ripe and Overripe are reserved for when granular annotations are available.
-FRESHNESS_LABELS = {0: "Fresh", 1: "Semi-ripe", 2: "Overripe", 3: "Rotten"}
+# Learned tasks: binary freshness and produce type, both annotated in the
+# source dataset (folder names). See src/data/build_splits.py.
+FRESHNESS_LABELS = {0: "Fresh", 1: "Stale"}
 FRESHNESS_TO_IDX = {v: k for k, v in FRESHNESS_LABELS.items()}
 
+PRODUCE_TYPES = ["apple", "banana", "bitter_gourd", "capsicum", "orange", "tomato"]
+PRODUCE_TO_IDX = {t: i for i, t in enumerate(PRODUCE_TYPES)}
+
+# Quality grade is NOT learned: no dataset provides graded labels. The API
+# derives it from P(fresh) and marks it as heuristic.
 QUALITY_LABELS = {0: "High (A)", 1: "Medium (B)", 2: "Low (C)"}
-QUALITY_TO_IDX = {"A": 0, "B": 1, "C": 2}
+QUALITY_FROM_P_FRESH = [(0.85, 0), (0.50, 1), (0.0, 2)]  # (min P(fresh), grade idx)
 
 # ── Image settings ──────────────────────────────────────────────────────
 IMAGE_SIZE = 224
@@ -17,23 +22,25 @@ NORMALIZE_MEAN = (0.485, 0.456, 0.406)
 NORMALIZE_STD = (0.229, 0.224, 0.225)
 
 # ── Model settings ──────────────────────────────────────────────────────
+# Production model: produced by src/training/run_experiment.py and promoted by
+# copying the chosen run's checkpoint + model_meta.json here.
 MODEL_CHECKPOINT = os.environ.get(
-    "MODEL_CHECKPOINT", "checkpoints/epoch=1-step=168.ckpt"
+    "MODEL_CHECKPOINT", "models/checkpoints/freshtrack_v2.ckpt"
 )
-NUM_FRESHNESS_CLASSES = 4
-NUM_QUALITY_CLASSES = 3
+# Labels, preprocessing and OOD threshold travel with the checkpoint.
+MODEL_META = os.environ.get("MODEL_META", "models/checkpoints/model_meta.json")
+NUM_FRESHNESS_CLASSES = len(FRESHNESS_LABELS)
+NUM_PRODUCE_TYPES = len(PRODUCE_TYPES)
 
 # ── Loss weights ──────────────────────────────────────────────────────
-LOSS_WEIGHTS = {
-    "freshness": 0.4,
-    "quality": 0.3,
-    "shelf_life": 0.25,
-    "rotation": 0.05,
-}
+LOSS_WEIGHTS = {"freshness": 0.5, "produce_type": 0.5}
 
 # ── Training defaults ─────────────────────────────────────────────────────
-DEFAULT_BATCH_SIZE = 32
-DEFAULT_LEARNING_RATE = 1e-4
+DEFAULT_BACKBONE = "efficientnet_b0"
+DEFAULT_BATCH_SIZE = 64
+DEFAULT_LEARNING_RATE = 3e-4
+DEFAULT_WEIGHT_DECAY = 1e-4
+DEFAULT_WARMUP_EPOCHS = 1
 DEFAULT_NUM_WORKERS = min(4, os.cpu_count() or 1)
 
 # ── API settings ──────────────────────────────────────────────────────
@@ -56,15 +63,28 @@ OPENWEATHERMAP_API_KEY = os.environ.get("OPENWEATHERMAP_API_KEY", "")
 KAGGLE_API_KEY = os.environ.get("KAGGLE_API_KEY", "")
 KAGGLE_USERNAME = os.environ.get("KAGGLE_USERNAME", "")
 
-# ── Shelf-life heuristics (days) per freshness + fruit type ──────────────────
-# Used by prepare_dataset.py when no explicit annotation is available.
-# Values are conservative estimates; replace with real annotations when possible.
-SHELF_LIFE_HEURISTICS = {
-    ("Fresh", "apple"): 7.0,
-    ("Fresh", "banana"): 5.0,
-    ("Fresh", "orange"): 10.0,
-    ("Fresh", "default"): 7.0,
-    ("Semi-ripe", "default"): 4.0,
-    ("Overripe", "default"): 1.5,
-    ("Rotten", "default"): 0.0,
+# ── Shelf-life heuristic (days) ─────────────────────────────────────────────
+# NOT learned and NOT validated: no dataset here has measured shelf-life.
+# Rough room-temperature reference days for a fully fresh item; the API
+# reports reference_days * P(fresh) and flags the value as heuristic.
+SHELF_LIFE_REFERENCE_DAYS = {
+    "apple": 10.0,
+    "banana": 4.0,
+    "bitter_gourd": 3.0,
+    "capsicum": 4.0,
+    "orange": 10.0,
+    "tomato": 5.0,
 }
+
+
+def derive_quality(p_fresh: float) -> str:
+    """Heuristic grade from P(fresh); not a learned quality grade."""
+    for min_p, idx in QUALITY_FROM_P_FRESH:
+        if p_fresh >= min_p:
+            return QUALITY_LABELS[idx]
+    return QUALITY_LABELS[QUALITY_FROM_P_FRESH[-1][1]]
+
+
+def derive_shelf_life(produce_type: str, p_fresh: float) -> float:
+    """Heuristic days: reference room-temperature days x P(fresh). Not validated."""
+    return round(SHELF_LIFE_REFERENCE_DAYS[produce_type] * p_fresh, 1)

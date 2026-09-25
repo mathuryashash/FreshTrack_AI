@@ -1,91 +1,88 @@
 # FreshTrack AI
 
-An intelligent fruit quality assessment system using multi-task deep learning to classify freshness, grade quality, and predict shelf life from a single image.
+Produce freshness assessment from a single photo, using multi-task deep learning.
+
+- **Learned tasks:** freshness (Fresh / Stale) and produce type (apple, banana, bitter gourd, capsicum, orange, tomato).
+- **Heuristic fields:** quality grade and shelf-life days are derived from P(fresh). They are not learned or validated, and the API marks them `*_is_heuristic: true`.
+- **Evaluation:** a leakage-free split grouped by source photo. The Kaggle dataset ships many augmented copies of each photo, and a per-file split leaks them into test. See `DECISIONS.md` §0 and `paper/`.
 
 ## Architecture
 
-- Backbone: EfficientNet-B0 (pretrained ImageNet)
-- Task heads: Freshness (4 classes), Quality (3 classes), Shelf-life (regression), Rotation (auxiliary)
-- Training: PyTorch Lightning with mixed precision, W&B logging, early stopping
-- API: FastAPI with rate limiting, API key auth, and input validation
-- Frontend: Streamlit with Grad-CAM visualisation
+- Backbone: EfficientNet-B0 (ImageNet-pretrained, via timm), with MobileNetV3-Large as an alternative
+- Heads: freshness (2 classes) and produce type (6 classes), trained with an equal-weight cross-entropy loss
+- OOD gate: energy score on the produce-type head, thresholded at 95% validation TPR (stored in `model_meta.json`)
+- Training: PyTorch Lightning, mixed precision, warmup + cosine LR, early stopping, CSV logs per run
+- API: FastAPI with rate limiting, API key auth, input validation and SQLite logging
+- Frontends: Streamlit (with Grad-CAM) and a Flutter mobile app (`mobile_app/`)
 
 ## Project Structure
 
 ```
-freshtrack-ai/
-├── src/
-│   ├── models/         # FreshTrackModel (PyTorch Lightning)
-│   ├── data/           # FruitDataset + Albumentations transforms
-│   ├── training/       # train.py, train_sequential.py
-│   ├── api/            # FastAPI inference server
-│   ├── utils/          # GradCAM, quantization, data_setup
-│   ├── app.py          # Streamlit frontend
-│   └── config.py       # Centralised configuration
-├── scripts/            # Data prep, splits, validation utilities
-├── tests/              # Unit and integration tests
-├── data/               # Metadata JSON files (generated)
-├── models/checkpoints/ # Saved model checkpoints
-├── Dockerfile
-├── requirements.txt
-└── requirements-api.txt
+src/
+├── data/build_splits.py   # grouped leakage-free split -> data/metadata_v2.json
+├── data/dataset.py        # FruitDataset + Albumentations transforms
+├── models/                # FreshTrackModel (PyTorch Lightning)
+├── training/train.py      # one run -> models/runs/<name>/
+├── training/evaluate.py   # metrics.json + model_meta.json per run
+├── training/run_experiment.py  # full matrix + baseline -> results/
+├── api/                   # FastAPI inference server
+├── app.py                 # Streamlit frontend
+└── config.py              # labels, heuristics, paths
+paper/                     # IEEE paper; numbers are generated from results/
+tests/                     # pytest suite
 ```
 
 ## Setup
 
-### 1. Install dependencies
-
 ```bash
 pip install -r requirements.txt
+cp .env.example .env    # set API_KEY, CORS_ORIGINS, ...
 ```
 
-### 2. Configure environment
+## Reproduce the results
+
+1. Download the Kaggle datasets "Fresh and Stale Images of Fruits and Vegetables" and "Fruit and Vegetable Image Recognition" into `data/downloads/`.
+2. Build the splits, run the experiments and generate the paper's numbers:
 
 ```bash
-cp .env.example .env
-# Edit .env — set API_KEY, MODEL_CHECKPOINT, Kaggle credentials, etc.
+python -m src.data.build_splits          # grouped split + external evaluation set
+python -m src.training.run_experiment    # 5 configs x 3 seeds + HSV baseline (resumable)
+python paper/make_tables.py              # LaTeX macros/tables/figure from results/
 ```
 
-### 3. Prepare dataset metadata
+`results/summary.md` holds the headline table. Every run records the metadata SHA-256, git SHA and seed in `models/runs/<run>/run_config.json`.
 
-Place your datasets under the project root (`FruitNet_Indian/`, `Fruit_Quality_Classification/`, `Fruits_360/`), then run:
-
-```bash
-python scripts/prepare_dataset.py
-```
-
-This creates `data/metadata_fruitnet.json`, `data/metadata_fruitquality.json`, and `data/metadata_fruits360.json`.
-
-### 4. Multi-stage training
+## Serve a model
 
 ```bash
-python scripts/train_sequential.py
-```
-
-Or train a single stage directly:
-
-```bash
-python src/training/train.py --metadata data/metadata_fruitnet.json --epochs 10 --name stage1
-```
-
-### 5. Run the API
-
-```bash
+cp models/runs/mnv3_mtl_s1/best.ckpt      models/checkpoints/freshtrack_v2.ckpt
+cp models/runs/mnv3_mtl_s1/model_meta.json models/checkpoints/model_meta.json
 uvicorn src.api.main:app --host 0.0.0.0 --port 8000
-```
-
-### 6. Run the Streamlit frontend
-
-```bash
 streamlit run src/app.py
 ```
 
-### 7. Docker
+Docker: the image does not contain the model, so mount it at runtime.
 
 ```bash
 docker build -t freshtrack-api .
-docker run -p 8000:8000 --env-file .env freshtrack-api
+docker run -p 8000:8000 --env-file .env \
+  -v "$PWD/models/checkpoints:/app/models/checkpoints:ro" freshtrack-api
 ```
+
+## Mobile App (Flutter, `mobile_app/`)
+
+Android package `in.rvitm.freshtrack`. It talks to the API above and stores scan history (with copies of the images) in a local SQLite database.
+
+```bash
+cd mobile_app
+flutter pub get
+flutter analyze && flutter test        # 21 tests
+flutter build apk --release            # build/app/outputs/flutter-apk/app-release.apk
+```
+
+- **Release signing**: put `storeFile`, `storePassword`, `keyAlias` and `keyPassword` in `android/key.properties`. Without that file, release builds fall back to the debug key. `key.properties` and `*.jks` are gitignored.
+- **HTTP**: plain `http://` (e.g. `http://10.0.2.2:8000` from the emulator) is allowed only in debug builds. Release builds require an `https://` API URL.
+- **Screenshots**: an end-to-end run on the Android 15 emulator is in `mobile_app/screenshots/`.
 
 ## API Endpoints
 
@@ -93,15 +90,15 @@ docker run -p 8000:8000 --env-file .env freshtrack-api
 |--------|------|-------------|
 | GET | `/` | Status check |
 | GET | `/health` | Model + device health |
-| POST | `/predict` | Upload image → freshness, quality, shelf-life |
-| POST | `/feedback` | Submit corrected prediction |
-| GET | `/docs` | Swagger UI |
+| POST | `/predict` | Image → freshness, produce type, heuristic quality/shelf-life, OOD score |
+| POST | `/feedback` | Submit a corrected freshness label (`Fresh`/`Stale`) |
+| GET | `/history`, `/stats` | Logged predictions |
 
-Authentication: pass `X-API-Key: <your_key>` header when `API_KEY` is set in `.env`.
+`/predict` returns `{"error": "OBJECT_NOT_RECOGNIZED", ...}` with status 200 when the OOD gate rejects the image.
 
-Rate limits: `/predict` — 30 req/min; `/feedback` — 10 req/min.
+Authentication: pass the `X-API-Key` header when `API_KEY` is set. Rate limits: `/predict` 30/min, `/feedback` 10/min.
 
-## Running Tests
+## Tests
 
 ```bash
 pytest tests/ -v
@@ -109,6 +106,7 @@ pytest tests/ -v
 
 ## Known Limitations
 
-- Training data only contains `Fresh` and `Rotten` labels. `Semi-ripe` and `Overripe` classes are reserved for when granular annotations are available.
-- Quality grades (`A`/`B`/`C`) are currently derived from freshness labels, not independently annotated.
-- Shelf-life predictions use per-fruit heuristics; replace with real annotations for production accuracy.
+- Freshness is binary (Fresh/Stale). The data has no intermediate ripeness stages.
+- Quality grade and shelf life are heuristics, not predictions: no dataset used here has graded or time-to-spoilage labels.
+- Training images are mostly single items on plain backgrounds. Accuracy on cluttered market photos is untested.
+- Only 6 produce types are supported. The OOD gate is meant to reject others, but its near-OOD rejection rate is imperfect (see `results/`).

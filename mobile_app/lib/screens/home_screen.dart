@@ -6,7 +6,6 @@ import '../models/prediction_result.dart';
 import '../services/api_service.dart';
 import '../services/database_service.dart';
 import '../widgets/result_card.dart';
-import 'camera_scan_screen.dart';
 import 'result_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -30,28 +29,32 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   bool _showOodPopup = false; // For OOD (Object Not Recognized) fun pop-up
 
   Future<void> _pick(ImageSource source) async {
-    if (source == ImageSource.camera) {
-      final file = await Navigator.push<File>(
-        context,
-        MaterialPageRoute(builder: (_) => const CameraScanScreen()),
+    // image_picker handles both sources via the system camera / photo picker,
+    // so there is no custom camera screen (and no CAMERA permission) to fail.
+    final XFile? picked;
+    try {
+      picked = await _picker.pickImage(
+        source: source,
+        maxWidth: 1600,
+        maxHeight: 1600,
+        imageQuality: 90,
       );
-      if (file == null || !mounted) return;
-      setState(() {
-        _image = file;
-        _result = null;
-        _error = null;
-      });
-      await _analyze(file);
-    } else {
-      final picked = await _picker.pickImage(source: source, imageQuality: 90);
-      if (picked == null || !mounted) return;
-      setState(() {
-        _image = File(picked.path);
-        _result = null;
-        _error = null;
-      });
-      await _analyze(File(picked.path));
+    } catch (e) {
+      if (mounted) {
+        setState(() => _error = source == ImageSource.camera
+            ? 'No camera available on this device.'
+            : 'Could not open the gallery: $e');
+      }
+      return;
     }
+    if (picked == null || !mounted) return;
+    final file = File(picked.path);
+    setState(() {
+      _image = file;
+      _result = null;
+      _error = null;
+    });
+    await _analyze(file);
   }
 
   Future<void> _analyze(File file) async {
@@ -59,22 +62,17 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
     try {
       final json = await _api.predict(file);
       if (!mounted) return;
-      
-      // Check for OOD (Object Not Recognized) response
-      if (json.containsKey('error') && 
-          (json['error'] == 'OBJECT_NOT_RECOGNIZED' || 
-           (json['error'] is Map && json['error']['code'] == 'OBJECT_NOT_RECOGNIZED'))) {
+
+      if (isObjectNotRecognized(json)) {
         setState(() { _loading = false; _showOodPopup = true; });
         return;
       }
-      
+
       final result = PredictionResult.fromJson(json, imagePath: file.path);
       await DatabaseService.insert(result);
-      setState(() { _result = result; });
-    } on ApiException catch (e) {
-      if (mounted) setState(() { _error = e.toString(); });
+      if (mounted) setState(() { _result = result; });
     } catch (e) {
-      if (mounted) setState(() { _error = 'Could not connect to server. Check your settings.'; });
+      if (mounted) setState(() { _error = describeError(e); });
     } finally {
       if (mounted) setState(() { _loading = false; });
     }
@@ -168,7 +166,7 @@ class _ImageArea extends StatelessWidget {
           color: const Color(0xFF131929),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: image != null ? primary.withOpacity(0.4) : border,
+            color: image != null ? primary.withValues(alpha: 0.4) : border,
             width: image != null ? 1.5 : 1,
           ),
         ),
@@ -206,7 +204,7 @@ class _EmptyState extends StatelessWidget {
         Container(
           width: 72, height: 72,
           decoration: BoxDecoration(
-            color: const Color(0xFF00E676).withOpacity(0.08),
+            color: const Color(0xFF00E676).withValues(alpha: 0.08),
             shape: BoxShape.circle,
           ),
           child: const Icon(Icons.add_photo_alternate_outlined, color: Color(0xFF00E676), size: 32),
@@ -214,7 +212,7 @@ class _EmptyState extends StatelessWidget {
         const SizedBox(height: 16),
         const Text('Take or upload a photo', style: TextStyle(color: Colors.white70, fontSize: 15, fontWeight: FontWeight.w500)),
         const SizedBox(height: 6),
-        Text('Supports JPG, PNG, WebP', style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 12)),
+        Text('Supports JPG, PNG, WebP', style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 12)),
       ],
     );
   }
@@ -230,7 +228,7 @@ class _IconChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.6),
+        color: Colors.black.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: Colors.white12),
       ),
@@ -343,7 +341,7 @@ class _LoadingState extends StatelessWidget {
       child: Column(children: [
         const SpinKitThreeBounce(color: Color(0xFF00E676), size: 28),
         const SizedBox(height: 16),
-        Text('Analysing fruit...', style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 14)),
+        Text('Analysing fruit...', style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 14)),
       ]),
     );
   }
@@ -360,7 +358,7 @@ class _ErrorCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: const Color(0xFF2A1A1A),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.red.withOpacity(0.3)),
+        border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
       ),
       child: Row(children: [
         const Icon(Icons.error_outline, color: Colors.redAccent, size: 20),
@@ -431,7 +429,7 @@ class _OodPopupState extends State<_OodPopup> with SingleTickerProviderStateMixi
           borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: Colors.purple.withOpacity(0.4),
+              color: Colors.purple.withValues(alpha: 0.4),
               blurRadius: 20,
               offset: const Offset(0, 10),
             ),

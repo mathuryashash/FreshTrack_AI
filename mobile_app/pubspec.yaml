@@ -4,7 +4,7 @@ publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.2.0 <4.0.0'
+  sdk: '>=3.10.3 <4.0.0'
 
 dependencies:
   flutter:
@@ -13,9 +13,8 @@ dependencies:
   # Networking
   http: ^1.2.0
 
-  # Camera & Image
-  camera: ^0.10.5+5
-  image_picker: ^1.0.7
+  # Image capture (camera + gallery via the system pickers)
+  image_picker: ^1.2.0
   flutter_image_compress: ^2.1.0
 
   # Local database (prediction history)
@@ -27,7 +26,6 @@ dependencies:
   google_fonts: ^6.1.0
   flutter_spinkit: ^5.2.0
   percent_indicator: ^4.2.3
-  cached_network_image: ^3.3.1
 
   # State & utils
   shared_preferences: ^2.2.2
@@ -37,9 +35,8 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
+  flutter_lints: ^6.0.0
+  sqflite_common_ffi: ^2.3.6
 
 flutter:
   uses-material-design: true
-  assets:
-    - assets/

@@ -20,7 +20,15 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
   @override
   void initState() {
     super.initState();
-    _load();
+    _future = DatabaseService.getRecent();
+    // Kept alive in an IndexedStack, so re-query whenever the DB changes.
+    DatabaseService.changes.addListener(_load);
+  }
+
+  @override
+  void dispose() {
+    DatabaseService.changes.removeListener(_load);
+    super.dispose();
   }
 
   void _load() => setState(() { _future = DatabaseService.getRecent(); });
@@ -41,10 +49,7 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
         ],
       ),
     );
-    if (confirmed == true) {
-      await DatabaseService.clear();
-      _load();
-    }
+    if (confirmed == true) await DatabaseService.clear(); // notifies -> _load
   }
 
   @override
@@ -71,7 +76,7 @@ class _HistoryScreenState extends State<HistoryScreen> with AutomaticKeepAliveCl
             child: ListView.separated(
               padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
               itemCount: items.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              separatorBuilder: (_, _) => const SizedBox(height: 10),
               itemBuilder: (_, i) => _HistoryTile(result: items[i]),
             ),
           );
@@ -113,15 +118,21 @@ class _HistoryTile extends StatelessWidget {
               Row(children: [
                 FreshnessBadge(freshness: result.freshness),
                 const SizedBox(width: 8),
-                Text(result.quality, style: const TextStyle(color: Colors.white54, fontSize: 12)),
+                Flexible(
+                  child: Text(
+                    result.produceLabel ?? 'Unknown produce',
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+                ),
               ]),
               const SizedBox(height: 6),
               Text(
-                '${result.shelfLifeDays.toStringAsFixed(1)} days remaining',
-                style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+                'Quality ${result.quality} · ${result.shelfLifeDays.toStringAsFixed(1)} days (est.)',
+                style: const TextStyle(color: Colors.white54, fontSize: 12),
               ),
               const SizedBox(height: 4),
-              Text(result.formattedDate, style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 11)),
+              Text(result.formattedDate, style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 11)),
             ]),
           ),
         ),
@@ -130,7 +141,7 @@ class _HistoryTile extends StatelessWidget {
           child: Text(
             '${(result.freshnessConfidence * 100).toStringAsFixed(0)}%',
             style: TextStyle(
-              color: result.isSafe ? const Color(0xFF00E676) : const Color(0xFFFF5252),
+              color: result.looksFresh ? const Color(0xFF00E676) : const Color(0xFFFF5252),
               fontSize: 13,
               fontWeight: FontWeight.w700,
             ),
@@ -146,11 +157,11 @@ class _EmptyHistory extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        Icon(Icons.history, size: 56, color: Colors.white.withOpacity(0.1)),
+        Icon(Icons.history, size: 56, color: Colors.white.withValues(alpha: 0.1)),
         const SizedBox(height: 16),
-        Text('No scans yet', style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 16)),
+        Text('No scans yet', style: TextStyle(color: Colors.white.withValues(alpha: 0.3), fontSize: 16)),
         const SizedBox(height: 6),
-        Text('Your scan history will appear here', style: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 13)),
+        Text('Your scan history will appear here', style: TextStyle(color: Colors.white.withValues(alpha: 0.2), fontSize: 13)),
       ]),
     );
   }

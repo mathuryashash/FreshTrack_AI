@@ -1,0 +1,15 @@
+Capture sessions are inferred from file-name patterns, and hash-based
+clustering over-merges some distinct photographs, so both units are
+approximations. The held-out-session split covers only the \NHeldOutStrata{} strata that
+have more than one capture session; for the others no session-independent
+estimate exists, so grouped-split numbers remain optimistic upper bounds.
+Where fresh and stale images of a produce type were captured with different
+devices or apps, freshness is confounded with acquisition source; we can expose
+this confound but not remove it without new data. Freshness labels are the dataset
+authors' binary folder labels, without inter-rater agreement or intermediate
+ripeness stages. Most images show single items on plain backgrounds, and the
+low cross-dataset accuracy suggests performance on cluttered market photos
+will be lower still; we did not collect field images. CIFAR-10 images are
+low-resolution and upsampled, which makes them easy far-OOD examples. Latency
+was measured on a laptop CPU, not a phone. Finally, the quality grade and
+shelf-life values shown to users are heuristics without any validation.

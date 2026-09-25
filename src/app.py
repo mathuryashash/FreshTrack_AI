@@ -5,8 +5,10 @@ from albumentations.pytorch import ToTensorV2
 from PIL import Image
 import numpy as np
 import cv2
+import json
 import os
 import sys
+from pathlib import Path
 
 sys.path.append(os.getcwd())
 
@@ -14,7 +16,9 @@ from src.models.freshtrack_model import FreshTrackModel
 from src.config import (
     MODEL_CHECKPOINT,
     FRESHNESS_LABELS,
-    QUALITY_LABELS,
+    PRODUCE_TYPES,
+    derive_quality,
+    derive_shelf_life,
     NORMALIZE_MEAN,
     NORMALIZE_STD,
     IMAGE_SIZE,
@@ -249,39 +253,27 @@ CUSTOM_CSS = """
 st.markdown(CUSTOM_CSS, unsafe_allow_html=True)
 
 
-class ModelManager:
-    _instance = None
-    _model = None
-    _device = None
-
-    def __new__(cls):
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-        return cls._instance
-
-    def load_model(self):
-        if self._model is not None:
-            return self._model, self._device
-
-        self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-        try:
-            self._model = FreshTrackModel.load_from_checkpoint(MODEL_CHECKPOINT)
-            self._model.to(self._device)
-            self._model.eval()
-            return self._model, self._device
-        except Exception as e:
-            st.error(f"Failed to load model from {MODEL_CHECKPOINT}: {e}")
-            st.info(
-                "Please ensure the checkpoint file exists and matches the model architecture."
-            )
-            return None, None
-
-    def get_model(self):
-        return self._model
+@st.cache_resource
+def load_model():
+    """Load once per server process; Streamlit re-runs the script on every click."""
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    try:
+        model = FreshTrackModel.load_from_checkpoint(
+            MODEL_CHECKPOINT, pretrained=False, weights_only=True, map_location=device
+        )
+        return model.to(device).eval(), device
+    except Exception as e:
+        st.error(f"Failed to load model from {MODEL_CHECKPOINT}: {e}")
+        st.info("Train and promote a model first (see README).")
+        return None, None
 
 
-model_manager = ModelManager()
+def load_reported_metrics():
+    """Test metrics of the promoted experiment, as written by run_experiment.py."""
+    path = Path("results/summary.json")
+    if not path.exists():
+        return None
+    return json.loads(path.read_text()).get("mnv3_mtl")  # deployed experiment
 
 
 def get_transforms():
@@ -328,10 +320,7 @@ def generate_gradcam(model, image_tensor, device):
         image_tensor = image_tensor.clone().to(device).requires_grad_(True)
         output = model(image_tensor)
 
-        if isinstance(output, tuple):
-            freshness_logits = output[0]
-        else:
-            freshness_logits = output
+        freshness_logits = output["freshness"]
 
         class_idx = torch.argmax(freshness_logits, dim=1).item()
         model.zero_grad()
@@ -379,30 +368,28 @@ def predict(model, image, device):
     tensor = aug["image"].unsqueeze(0).to(device)
 
     with torch.no_grad():
-        fresh_logits, qual_logits, shelf_pred, _ = model(tensor)
+        logits = model(tensor)
 
-    fresh_probs = torch.softmax(fresh_logits, dim=1)
-    fresh_idx = torch.argmax(fresh_probs, dim=1).item()
-    fresh_conf = fresh_probs[0][fresh_idx].item()
-
-    qual_probs = torch.softmax(qual_logits, dim=1)
-    qual_idx = torch.argmax(qual_probs, dim=1).item()
-    qual_conf = qual_probs[0][qual_idx].item()
-
-    shelf_life = max(0, shelf_pred.item())
+    fresh_probs = torch.softmax(logits["freshness"], dim=1)[0].cpu()
+    fresh_idx = int(fresh_probs.argmax())
+    type_probs = torch.softmax(logits["produce_type"], dim=1)[0].cpu()
+    type_idx = int(type_probs.argmax())
+    p_fresh = float(fresh_probs[0])
 
     return {
-        "freshness": FRESHNESS_LABELS.get(fresh_idx, "Unknown"),
-        "freshness_confidence": fresh_conf,
-        "quality": QUALITY_LABELS.get(qual_idx, "Unknown"),
-        "quality_confidence": qual_conf,
-        "shelf_life_days": round(shelf_life, 1),
-        "fresh_probs": fresh_probs[0].cpu().numpy().tolist(),
-        "qual_probs": qual_probs[0].cpu().numpy().tolist(),
+        "freshness": FRESHNESS_LABELS[fresh_idx],
+        "freshness_confidence": float(fresh_probs[fresh_idx]),
+        "produce_type": PRODUCE_TYPES[type_idx],
+        "produce_type_confidence": float(type_probs[type_idx]),
+        "quality": derive_quality(p_fresh),
+        "shelf_life_days": derive_shelf_life(PRODUCE_TYPES[type_idx], p_fresh),
+        "fresh_probs": fresh_probs.numpy().tolist(),
+        "type_probs": type_probs.numpy().tolist(),
     }
 
 
-model, device = model_manager.load_model()
+model, device = load_model()
+reported = load_reported_metrics()
 
 with st.sidebar:
     st.markdown("### 🍎 FreshTrack AI")
@@ -419,24 +406,21 @@ with st.sidebar:
     show_model_info = st.toggle("Show Model Architecture", value=True)
 
     st.markdown("---")
-    st.markdown("#### 📊 Model Performance")
-    st.markdown(
-        """
-    <div class="training-stat">
-        <span class="stat-label">Freshness F1</span>
-        <span class="stat-value">0.92</span>
-    </div>
-    <div class="training-stat">
-        <span class="stat-label">Quality F1</span>
-        <span class="stat-value">0.88</span>
-    </div>
-    <div class="training-stat">
-        <span class="stat-label">Shelf-Life MAE</span>
-        <span class="stat-value">0.75 days</span>
-    </div>
-    """,
-        unsafe_allow_html=True,
-    )
+    st.markdown("#### 📊 Test-set Performance")
+    if reported:
+        for label, key in [
+            ("Freshness macro-F1", "freshness_macro_f1"),
+            ("Produce-type macro-F1", "produce_type_macro_f1"),
+        ]:
+            m = reported[key]
+            st.markdown(
+                f"""<div class="training-stat"><span class="stat-label">{label}</span>
+                <span class="stat-value">{m['mean']:.3f} ± {m['std']:.3f}</span></div>""",
+                unsafe_allow_html=True,
+            )
+        st.caption("Grouped leakage-free test split, mean ± std over seeds (results/summary.json).")
+    else:
+        st.caption("No evaluation results yet (run src/training/run_experiment.py).")
 
     st.markdown("---")
     st.markdown("#### 🔧 System Status")
@@ -454,8 +438,8 @@ st.markdown(
     <div class="main-subtitle">Multi-Task Deep Learning for Fruit Quality Assessment</div>
     <div style="margin-top: 1rem;">
         <span class="info-badge">Offline Mode</span>
-        <span class="info-badge" style="background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%);">EfficientNet-B0</span>
-        <span class="info-badge" style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);">4 Tasks</span>
+        <span class="info-badge" style="background: linear-gradient(135deg, #8B5CF6 0%, #6D28D9 100%);">MobileNetV3-L</span>
+        <span class="info-badge" style="background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);">2 Learned Tasks</span>
     </div>
 </div>
 """,
@@ -468,26 +452,28 @@ if show_model_info and model is not None:
 
         with col1:
             st.markdown("""
-            **Backbone:** EfficientNet-B0 (pretrained on ImageNet)
+            **Backbone:** MobileNetV3-Large (pretrained on ImageNet; EfficientNet-B0 also supported)
             ```
-            Input (224×224×3) → EfficientNet-B0 → 1280 features
+            Input (224×224×3) → MobileNetV3-L → 1280 features
                                     ↓
-            ┌────────────────────────┼────────────────────────┐
-            ↓                        ↓                        ↓
-        Freshness Head         Quality Head           Shelf-Life Head
-        (4 classes)            (3 classes)            (regression)
+                     ┌──────────────┴──────────────┐
+                     ↓                             ↓
+              Freshness Head               Produce-Type Head
+              (Fresh / Stale)              (6 classes)
             ```
+            Quality grade and shelf-life are **heuristics** derived from
+            P(fresh) and the produce type; they are not learned or validated.
             """)
 
         with col2:
             st.markdown("""
             **Training Configuration:**
-            - **Optimizer:** AdamW (lr=1e-4)
-            - **Scheduler:** Cosine Annealing with Warmup
-            - **Loss Weights:** Freshness 0.4, Quality 0.3, Shelf-Life 0.25
-            - **Augmentations:** RandomResizedCrop, ColorJitter, CoarseDropout
-            - **Batch Size:** 32
-            - **Epochs:** 20
+            - **Optimizer:** AdamW (lr=3e-4, wd=1e-4)
+            - **Scheduler:** 1-epoch linear warmup, cosine decay
+            - **Loss Weights:** Freshness 0.5, Produce type 0.5
+            - **Augmentations:** RandomResizedCrop, flips, ColorJitter, CoarseDropout
+            - **Batch Size:** 64, up to 10 epochs, early stopping
+            - **Split:** grouped by source photo (no leakage)
             """)
 
 col_main1, col_main2 = st.columns([1.2, 1], gap="large")
@@ -538,12 +524,7 @@ with col_main2:
     if "prediction" in st.session_state:
         result = st.session_state["prediction"]
 
-        freshness_colors = {
-            "Fresh": "#22C55E",
-            "Semi-ripe": "#F59E0B",
-            "Overripe": "#F97316",
-            "Rotten": "#EF4444",
-        }
+        freshness_colors = {"Fresh": "#22C55E", "Stale": "#EF4444"}
 
         grade_colors = {
             "High (A)": "#22C55E",
@@ -567,11 +548,22 @@ with col_main2:
         st.markdown(
             f"""
         <div class="section-card">
-            <div class="section-title">⭐ Quality Grade</div>
+            <div class="section-title">🍅 Produce Type</div>
+            <div class="metric-value">{result["produce_type"].replace("_", " ").title()}</div>
+            <div class="metric-label">Confidence: {result["produce_type_confidence"] * 100:.1f}%</div>
+        </div>
+        """,
+            unsafe_allow_html=True,
+        )
+
+        st.markdown(
+            f"""
+        <div class="section-card">
+            <div class="section-title">⭐ Quality Grade (heuristic)</div>
             <div class="metric-value" style="color: {grade_colors.get(result["quality"], "#fff")}">
                 {result["quality"]}
             </div>
-            <div class="metric-label">Confidence: {result["quality_confidence"] * 100:.1f}%</div>
+            <div class="metric-label">Derived from P(fresh); not a trained grader</div>
         </div>
         """,
             unsafe_allow_html=True,
@@ -588,11 +580,11 @@ with col_main2:
         st.markdown(
             f"""
         <div class="section-card">
-            <div class="section-title">📅 Shelf Life</div>
+            <div class="section-title">📅 Shelf Life (heuristic)</div>
             <div class="metric-value" style="color: {shelf_color}">
-                {result["shelf_life_days"]} <span style="font-size: 1rem;">days</span>
+                ~{result["shelf_life_days"]} <span style="font-size: 1rem;">days</span>
             </div>
-            <div class="metric-label">Estimated remaining freshness</div>
+            <div class="metric-label">Reference days × P(fresh); not a validated prediction</div>
         </div>
         """,
             unsafe_allow_html=True,
@@ -600,32 +592,21 @@ with col_main2:
 
         with st.expander("📈 Detailed Confidence Scores"):
             st.markdown("**Freshness Probabilities:**")
-            fresh_labels = ["Fresh", "Semi-ripe", "Overripe", "Rotten"]
-            for i, (label, prob) in enumerate(zip(fresh_labels, result["fresh_probs"])):
+            for label, prob in zip(FRESHNESS_LABELS.values(), result["fresh_probs"]):
                 st.progress(prob, text=f"{label}: {prob * 100:.1f}%")
 
-            st.markdown("**Quality Probabilities:**")
-            qual_labels = ["Grade A", "Grade B", "Grade C"]
-            for i, (label, prob) in enumerate(zip(qual_labels, result["qual_probs"])):
+            st.markdown("**Produce-Type Probabilities:**")
+            for label, prob in zip(PRODUCE_TYPES, result["type_probs"]):
                 st.progress(prob, text=f"{label}: {prob * 100:.1f}%")
 
         st.markdown("---")
         st.markdown("### 💡 Recommendations")
 
         if result["freshness"] == "Fresh":
-            st.success(
-                "🌟 **Excellent!** This fruit is in peak condition. Store at room temperature or refrigerate to extend freshness."
-            )
-        elif result["freshness"] == "Semi-ripe":
-            st.info(
-                "📅 **Near Optimal Ripeness.** Best consumed within 2-3 days for best taste."
-            )
-        elif result["freshness"] == "Overripe":
-            st.warning(
-                "⚠️ **Use Soon.** Consume immediately or use for smoothies/jams. Do not store further."
-            )
+            st.success("🌟 **Looks fresh.** Visual assessment only; check smell and texture too.")
         else:
-            st.error("❌ **Not Recommended.** Signs of decay detected. Please discard.")
+            st.warning("⚠️ **Looks stale.** Visual signs of ageing detected; inspect before use.")
+        st.caption("FreshTrack is a visual aid, not a food-safety test.")
 
         if "gradcam" in st.session_state and st.session_state["gradcam"] is not None:
             st.markdown("---")
@@ -656,11 +637,11 @@ with col_main2:
             (
                 "🍎",
                 "Multi-Task Learning",
-                "Freshness, Quality & Shelf-Life in one pass",
+                "Freshness and produce type in one pass",
             ),
-            ("⚡", "Offline Processing", "No internet required - runs locally"),
+            ("⚡", "Offline Processing", "Runs locally once the model is on disk"),
             ("🔥", "Explainable AI", "Grad-CAM visualization shows decision rationale"),
-            ("📊", "High Accuracy", "92% F1-Score on freshness detection"),
+            ("🧪", "Leakage-free Evaluation", "Tested on photos never seen in training"),
         ]
 
         for icon, title, desc in features:

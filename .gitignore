@@ -15,19 +15,34 @@ wandb/
 .dvc/
 
 # Data & Models (large binary files - hosted on Hugging Face Hub)
-data/
-models/
+# The split files are small and are what the paper's results depend on.
+data/*
+!data/metadata_v2.json
+!data/metadata_session.json
+!data/metadata_external.json
+models/*
+!models/model_card.md
 archive_datasets/
 
 # Training/Dev-only files (not needed for app deployment)
 notebooks/
 scripts/
-tests/
-docs/
-.github/
 
 # Internal agent/AI assistant files
 .agents/
+.serena/
+.mcp.json
+
+# Paper build artifacts and bulky run logs
+paper/*.aux
+paper/*.log
+paper/*.bbl
+paper/*.blg
+paper/*.out
+paper/*.fls
+paper/*.fdb_latexmk
+results/*.log
+results/*_log.txt
 
 # Local-only scripts and internal docs
 cleanup_root.py
@@ -45,8 +60,6 @@ validation_report.txt
 upload_model_to_hf.py
 _hf_upload_temp.py
 PRD.md
-.dockerignore
-requirements.txt
 
 # Kaggle credentials
 .kaggle/

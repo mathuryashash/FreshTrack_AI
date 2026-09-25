@@ -14,8 +14,18 @@ from pathlib import Path
 
 DATABASE_URL = os.environ.get("DATABASE_URL", "data/freshtrack.db")
 
-if not DATABASE_URL.endswith(".db"):
-    raise ValueError(f"DATABASE_URL must point to a .db file, got: {DATABASE_URL}")
+if "://" in DATABASE_URL or not DATABASE_URL.endswith(".db"):
+    raise ValueError(f"DATABASE_URL must be a filesystem path to a .db file, got: {DATABASE_URL}")
+
+# Schema migrations, applied in order; PRAGMA user_version records the last one.
+MIGRATIONS = [
+    [
+        "ALTER TABLE predictions ADD COLUMN produce_type TEXT",
+        "ALTER TABLE predictions ADD COLUMN produce_type_conf REAL",
+        "ALTER TABLE predictions ADD COLUMN ood_score REAL",
+        "CREATE INDEX IF NOT EXISTS idx_pred_fresh_ts ON predictions(freshness, timestamp DESC)",
+    ],
+]
 
 
 _local = threading.local()
@@ -34,6 +44,7 @@ def _connect() -> sqlite3.Connection:
         conn.execute("PRAGMA foreign_keys = ON")
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("PRAGMA busy_timeout=5000")
+        conn.execute("PRAGMA synchronous=NORMAL")  # safe under WAL
         _local.conn = conn
     return _local.conn
 
@@ -106,6 +117,22 @@ def init_db() -> None:
                 "INSERT INTO fruit_types (name, default_shelf_life) VALUES (?, ?)",
                 fruit_types,
             )
+    _migrate(_connect())
+
+
+def _migrate(conn: sqlite3.Connection) -> None:
+    """Apply pending MIGRATIONS; BEGIN IMMEDIATE serialises concurrent workers."""
+    conn.execute("BEGIN IMMEDIATE")
+    try:
+        version = conn.execute("PRAGMA user_version").fetchone()[0]
+        for i, statements in enumerate(MIGRATIONS[version:], start=version + 1):
+            for stmt in statements:
+                conn.execute(stmt)
+            conn.execute(f"PRAGMA user_version = {i}")
+        conn.execute("COMMIT")
+    except Exception:
+        conn.execute("ROLLBACK")
+        raise
 
 
 def log_prediction(
@@ -115,14 +142,19 @@ def log_prediction(
     shelf_life_days: float,
     inference_ms: float,
     entropy_score: float = 0.0,
+    produce_type: str = None,
+    produce_type_conf: float = None,
+    ood_score: float = None,
+    model_version: str = None,
 ) -> str:
     """Insert a prediction row and return its UUID."""
     pred_id = str(uuid.uuid4())
     with _connect() as conn:
         conn.execute(
             """INSERT INTO predictions
-               (id, timestamp, freshness, freshness_conf, quality, shelf_life_days, inference_ms, entropy_score)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+               (id, timestamp, freshness, freshness_conf, quality, shelf_life_days, inference_ms,
+                entropy_score, produce_type, produce_type_conf, ood_score, model_version)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, COALESCE(?, '1.0.0'))""",
             (
                 pred_id,
                 datetime.utcnow().isoformat(),
@@ -132,6 +164,10 @@ def log_prediction(
                 shelf_life_days,
                 inference_ms,
                 entropy_score,
+                produce_type,
+                produce_type_conf,
+                ood_score,
+                model_version,
             ),
         )
     return pred_id
@@ -155,20 +191,22 @@ def log_feedback(
         if existing is None:
             raise ValueError(f"prediction_id '{prediction_id}' does not exist")
 
-        # Insert feedback
-        conn.execute(
-            """INSERT INTO feedback
-               (id, timestamp, prediction_id, predicted_freshness, correct_freshness, notes)
-               VALUES (?, ?, ?, ?, ?, ?)""",
-            (
-                feed_id,
-                datetime.utcnow().isoformat(),
-                prediction_id,
-                predicted_freshness,
-                correct_freshness,
-                notes,
-            ),
-        )
+        # Insert feedback; `with conn` commits (previously the INSERT was left
+        # in an open transaction, holding the write lock).
+        with conn:
+            conn.execute(
+                """INSERT INTO feedback
+                   (id, timestamp, prediction_id, predicted_freshness, correct_freshness, notes)
+                   VALUES (?, ?, ?, ?, ?, ?)""",
+                (
+                    feed_id,
+                    datetime.utcnow().isoformat(),
+                    prediction_id,
+                    predicted_freshness,
+                    correct_freshness,
+                    notes,
+                ),
+            )
     except ValueError:
         raise
     except Exception as e:
@@ -195,6 +233,16 @@ def get_recent_predictions(
     return [dict(r) for r in rows]
 
 
+def count_predictions(freshness_filter: str = None) -> int:
+    """Row count matching the same filter as get_recent_predictions."""
+    with _connect() as conn:
+        if freshness_filter:
+            return conn.execute(
+                "SELECT COUNT(*) FROM predictions WHERE freshness = ?", (freshness_filter,)
+            ).fetchone()[0]
+        return conn.execute("SELECT COUNT(*) FROM predictions").fetchone()[0]
+
+
 def get_stats() -> dict:
     with _connect() as conn:
         total = conn.execute("SELECT COUNT(*) FROM predictions").fetchone()[0]
@@ -213,7 +261,7 @@ def get_stats() -> dict:
 
 
 def get_uncertain_predictions(
-    limit: int = 100, entropy_threshold: float = 1.5
+    limit: int = 100, entropy_threshold: float = 0.9  # bits; binary max is 1
 ) -> list[dict]:
     with _connect() as conn:
         rows = conn.execute(
