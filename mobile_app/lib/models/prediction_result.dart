@@ -21,19 +21,6 @@ class PredictionResult {
     this.imagePath,
   });
 
-  factory PredictionResult.fromJson(Map<String, dynamic> json, {String? imagePath}) {
-    return PredictionResult(
-      id: json['prediction_id'] as String?,
-      freshness: json['freshness'] as String? ?? 'Unknown',
-      freshnessConfidence: (json['freshness_confidence'] as num?)?.toDouble() ?? 0.0,
-      produceType: json['produce_type'] as String?,
-      quality: json['quality'] as String? ?? 'Unknown',
-      shelfLifeDays: (json['shelf_life_days'] as num?)?.toDouble() ?? 0.0,
-      timestamp: DateTime.now(),
-      imagePath: imagePath,
-    );
-  }
-
   factory PredictionResult.fromDb(Map<String, dynamic> row) {
     return PredictionResult(
       id: row['id'] as String?,
@@ -76,7 +63,7 @@ class PredictionResult {
     return freshness == 'Fresh' ? 'Looks fresh' : 'Looks stale';
   }
 
-  /// Quality and shelf life are derived from P(fresh) server-side, not learned.
+  /// Quality and shelf life are derived from P(fresh) on the device, not learned.
   static const heuristicDisclaimer =
       'Quality and shelf life are estimates from the freshness score, '
       'not a food-safety test. Check smell, texture and mould.';

@@ -1,0 +1,14 @@
+{
+  "source": "docs/mobile_on_device_report.md; measured on an Android 15 x86_64 emulator (2 vCPU, software rendering) on 2026-09-25; APK sizes re-checked on the build outputs",
+  "apk_mib": {"arm64-v8a": 52.3, "armeabi-v7a": 44.9, "x86_64": 57.3, "universal": 119.2},
+  "apk_contents_mb_arm64": {"onnxruntime_lib": 19.2, "model": 19.4, "flutter_engine": 11.7, "app_code": 5.2},
+  "parity": {"n_images": 40, "freshness_agree": 40, "type_agree": 40, "gate_agree": 40,
+             "max_abs_logit_diff": 0.273, "mean_abs_logit_diff": 0.024},
+  "latency_ms": {"pipeline_median_min": 137, "pipeline_median_max": 142,
+                 "app_median": 440, "app_p95": 1188, "app_scans": 22},
+  "cold_start_ms_median": 2201,
+  "ram_pss_mb": {"idle": 85.4, "model_loaded": 169.3, "after_22_scans": 193.2, "after_27_scans": 155.5},
+  "peak_rss_mb": 326.6,
+  "storage_per_scan_kb_mean": 45.6,
+  "installed_code_kb_x86_64": 59444
+}

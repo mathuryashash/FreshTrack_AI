@@ -1,0 +1,68 @@
+{
+  "backbone": "mobilenetv3_large_100",
+  "tasks": [
+    "freshness",
+    "produce_type"
+  ],
+  "freshness_labels": [
+    "Fresh",
+    "Stale"
+  ],
+  "produce_types": [
+    "apple",
+    "banana",
+    "bitter_gourd",
+    "capsicum",
+    "orange",
+    "tomato"
+  ],
+  "image_size": 224,
+  "normalize_mean": [
+    0.485,
+    0.456,
+    0.406
+  ],
+  "normalize_std": [
+    0.229,
+    0.224,
+    0.225
+  ],
+  "ood_score": "energy_produce_type",
+  "ood_threshold": 8.28413200378418,
+  "metadata_sha256": "4a578ce97831210e75f172b3af0c6c1d4822e287a9c5a5873d7c3f067fefd559",
+  "git_sha": "74ad4d75fa031ae734fab2a11c36442e7fdb69e1",
+  "onnx_file": "freshtrack.onnx",
+  "input_name": "input",
+  "output_names": [
+    "freshness",
+    "produce_type"
+  ],
+  "input_layout": "NCHW float32, RGB, resize to image_size x image_size (bilinear), scale to [0,1], then (x - mean) / std",
+  "quality_labels": [
+    "High (A)",
+    "Medium (B)",
+    "Low (C)"
+  ],
+  "quality_from_p_fresh": [
+    [
+      0.85,
+      "High (A)"
+    ],
+    [
+      0.5,
+      "Medium (B)"
+    ],
+    [
+      0.0,
+      "Low (C)"
+    ]
+  ],
+  "shelf_life_reference_days": {
+    "apple": 10.0,
+    "banana": 4.0,
+    "bitter_gourd": 3.0,
+    "capsicum": 4.0,
+    "orange": 10.0,
+    "tomato": 5.0
+  }
+}

@@ -5,7 +5,7 @@ class FreshnessBadge extends StatelessWidget {
   const FreshnessBadge({super.key, required this.freshness});
 
   Color get _color {
-    // API labels since v2: 'Fresh' | 'Stale'.
+    // Model labels since v2: 'Fresh' | 'Stale'.
     switch (freshness) {
       case 'Fresh': return const Color(0xFF00E676);
       case 'Stale': return const Color(0xFFFF5252);

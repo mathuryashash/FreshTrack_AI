@@ -1,93 +1,122 @@
 \subsection{Leakage from augmented copies}
-Table~\ref{tab:leak} and Fig.~\ref{fig:leak} compare the per-file and grouped
-protocols. Under the per-file split every EfficientNet-B0 seed classifies every
-test image correctly (\NaiveFreshAcc\% freshness, \NaiveTypeAcc\% type). The
-grouped split lowers this to \MtlFreshAcc\% and \MtlTypeAcc\%. The effect is
-larger for the colour-histogram baseline, whose freshness accuracy drops from
-\HistNaiveFreshAcc\% to \HistGroupedFreshAcc\% and type accuracy from
-\HistNaiveTypeAcc\% to \HistGroupedTypeAcc\%: the per-file split lets even a
-model with no spatial features look almost as good as a deep network, which
-hides how much of the task the CNN actually solves.
+Fig.~\ref{fig:leak} and Table~\ref{tab:leak} compare the protocols. With a
+per-file split, every EfficientNet-B0 seed classifies every test image
+correctly (\NaiveFreshAcc\% on freshness, \NaiveTypeAcc\% on produce type).
+Keeping clusters together brings this down only slightly, to \MtlFreshAcc\% and
+\MtlTypeAcc\%. The colour-histogram baseline tells a different story. Its
+freshness accuracy drops from \HistNaiveFreshAcc\% to \HistGroupedFreshAcc\%,
+and its produce-type accuracy from \HistNaiveTypeAcc\% to
+\HistGroupedTypeAcc\%. On a per-file split, a model that sees nothing but colour
+looks almost as good as a CNN, which hides how much of the task the CNN is
+actually solving.
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\columnwidth]{figures/leakage.pdf}
-\caption{Test accuracy under the per-file and grouped splits.}
+\caption{Test accuracy under three protocols. Open circles: per-file split.
+Squares: photo-grouped split. Diamonds: unseen capture sessions
+(EfficientNet-B0 only).}
 \label{fig:leak}
 \end{figure}
 
-\subsection{Session-level dependence}
-Grouping by source photo does not make test images independent of training.
-File names indicate only \NSessions{} capture sessions (a capture date or
-camera series within a class; we infer them from file-name patterns), and \SessionSharePct\% of grouped-split test images
-come from a session that also contributes training images; \NSingleSessionStrata{}
-of the 12 produce/freshness strata consist of a single session. For the
-\NHeldOutStrata{} strata with more than one session we built a held-out-session
-split (\NSessTrain{}/\NSessVal{}/\NSessTest{} images) in which each such stratum
-contributes one entire, unseen session to the test set. We drop the
-\NSessExcluded{} training images that are augmented copies (same file-name
-source) or near-duplicates (dHash within 2 bits) of a test image; no remaining
-training image is within 2 bits of a test image. Clusters from the grouped
-split may still span train and test here, because chained merging links
-different photographs of the same session, which is exactly the dependence
-this protocol probes.
+\subsection{Capture sessions}
+Grouping the copies of each photograph is not enough to make the test set
+independent of training. Going by the file names, the whole dataset was
+photographed in roughly \NSessions{} capture sessions (a date or a camera series
+within a class), and \SessionSharePct\% of the grouped-split test images come
+from a session that also supplies training images. \NSingleSessionStrata{} of
+the 12 produce/freshness strata come from a single session. For the
+\NHeldOutStrata{} strata with more than one session we built a second split in
+which one whole session per stratum is held out for testing
+(\NSessTrain{}/\NSessVal{}/\NSessTest{} images). We remove the
+\NSessExcluded{} training images that are augmented copies or near-duplicates
+(within 2 bits) of a test image, so no training image is that close to any test
+image. Clusters can still cross this split, because chained merging links
+different photographs from the same session. That dependence is exactly what
+the protocol is meant to probe.
 
-On this split freshness accuracy is \SessFreshAcc\% (vs.\ \MtlFreshAcc\% on the
-grouped split), while produce-type accuracy stays at \SessTypeAcc\%, and the
-freshness ECE rises from \MtlFreshEce\% to \SessFreshEce\%: the model becomes
-confidently wrong. Table~\ref{tab:session} breaks this down by stratum. On the
-\NSessCommonStrata{} strata that also occur in the grouped test, accuracy falls
-only from \SessStrataGroupedFreshAcc\% to \SessStrataHeldFreshAcc\%; apple,
-bitter gourd and orange sessions transfer almost perfectly. The failures are
-capsicum (\SessHeldCapsicumFresh\% on an unseen fresh session,
-\SessHeldCapsicumStale\% on an unseen stale session) and fresh tomato
-(\SessHeldTomatoFresh\%). In both cases the held-out session's capture source
-appears in training only with the opposite label: every stale capsicum left in
-training is a WhatsApp-compressed photograph, while every camera (IMG-series)
-capsicum in training is fresh, so camera photographs of stale capsicums are
-called fresh; likewise, all IMG-series tomatoes in training are stale, and the
-held-out IMG-series fresh tomatoes are often called stale. This pattern is consistent with
-the network having partly learned the acquisition source, a shortcut that
-per-file and per-photo splits cannot reveal because \SessionSharePct\% of their
-test images share a capture session with training images.
+On unseen sessions, freshness accuracy falls to \SessFreshAcc\% (from
+\MtlFreshAcc\%), while produce-type accuracy holds at \SessTypeAcc\%.
+Calibration suffers more than accuracy: freshness ECE rises from
+\MtlFreshEce\% to \SessFreshEce\%, so the model is often confidently wrong.
+Fig.~\ref{fig:sessions} shows where the errors come from. Averaged over the
+\NSessCommonStrata{} strata that also appear in the grouped test, accuracy falls
+from \SessStrataGroupedFreshAcc\% to \SessStrataHeldFreshAcc\%, but the drop is
+far from uniform. Apple, bitter gourd, orange and stale-tomato sessions transfer
+almost perfectly. The failures are capsicum (\SessHeldCapsicumFresh\% on an unseen fresh session,
+\SessHeldCapsicumStale\% on an unseen stale one) and fresh tomato
+(\SessHeldTomatoFresh\%).
 
-\subsection{Multi-task versus single-task learning and backbones}
-Table~\ref{tab:main} reports the grouped-split results. The multi-task
-EfficientNet-B0 reaches \MtlFreshAcc\% freshness and \MtlTypeAcc\% type
-accuracy, against \FreshFreshAcc\% and \TypeTypeAcc\% for the single-task
-networks. The differences are below one percentage point and point in
-opposite directions (freshness favours the multi-task model, type the
-single-task one); three seeds cannot resolve them, so we find no evidence that
-joint training helps or hurts, while one shared network halves inference cost. MobileNetV3-Large matches
-EfficientNet-B0 (\MnvFreshAcc\% and \MnvTypeAcc\%) with \MnvParams{}\,M
-parameters and \MnvCpuMs{}\,ms CPU latency against \MtlCpuMs{}\,ms, and is the
-model we deploy. For a single seed-0 run the 95\% group-bootstrap interval of
-freshness accuracy is \MtlSzeroFreshCI{}\%, reflecting that the \NTestGroups{}
-test groups, not the \NTest{} images, are the independent units.
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/sessions.pdf}
+\caption{Freshness accuracy of EfficientNet-B0 (three seeds pooled) on each
+held-out capture session; $n$ is the number of held-out images. Red bars fall
+below 80\%. Blue ticks mark the same stratum on the photo-grouped test, where
+that stratum exists.}
+\label{fig:sessions}
+\end{figure}
+
+These are precisely the cases in which the held-out session's capture source
+appears in training only with the opposite label. Every stale capsicum left in
+training is a WhatsApp-compressed photograph, and every camera (IMG-series)
+capsicum in training is fresh. Camera photographs of stale capsicums are duly
+called fresh. In the same way, all IMG-series tomatoes in training are stale,
+and the held-out IMG-series fresh tomatoes are often called stale. We read this
+as a sign that the network has partly learned the acquisition source rather
+than freshness. Neither a per-file nor a per-photo split can reveal it, since
+\SessionSharePct\% of their test images share a session with training images.
+
+\subsection{Multi-task versus single-task, and the choice of backbone}
+Table~\ref{tab:main} gives the grouped-split results. The multi-task
+EfficientNet-B0 reaches \MtlFreshAcc\% on freshness and \MtlTypeAcc\% on
+produce type; the single-task networks reach \FreshFreshAcc\% and
+\TypeTypeAcc\%. The gaps are under one percentage point, they point in opposite
+directions, and three seeds cannot separate them. We see no evidence that joint
+training helps or hurts, but one shared network does halve the inference cost.
+MobileNetV3-Large matches EfficientNet-B0 (\MnvFreshAcc\% and \MnvTypeAcc\%)
+with \MnvParams{}\,M parameters and runs in \MnvCpuMs{}\,ms instead of
+\MtlCpuMs{}\,ms, so it is the model we deploy. For a single seed-0 run, the
+95\% group-bootstrap interval of freshness accuracy is \MtlSzeroFreshCI{}\%. It
+is that wide because only the \NTestGroups{} test clusters, not the \NTest{}
+images, are independent.
 
 \subsection{Cross-dataset produce type}
-On \NCross{} external images of five of the six produce types (bell pepper is
-mapped to capsicum; there is no bitter gourd), type accuracy is only
-\MnvCrossTypeAcc\% (MobileNetV3) and \MtlCrossTypeAcc\% (EfficientNet-B0),
-compared with about 99\% in-domain. The external set has no freshness labels;
-MobileNetV3 calls \MnvCrossShareFreshExact\% of these retail-style photos fresh
-and EfficientNet-B0 \MtlCrossShareFreshExact\%, which is plausible but not an
-accuracy.
+On \NCross{} external images of five of the six produce types (bell pepper
+counts as capsicum, and there is no bitter gourd), produce-type accuracy is
+only \MnvCrossTypeAcc\% for MobileNetV3 and \MtlCrossTypeAcc\% for
+EfficientNet-B0, against roughly 99\% in-domain. The external photos carry no
+freshness labels. MobileNetV3 calls \MnvCrossShareFreshExact\% of them fresh
+and EfficientNet-B0 \MtlCrossShareFreshExact\%, which is plausible for retail
+photos but is not an accuracy.
 
 \subsection{Out-of-distribution gate}
-Table~\ref{tab:ood} compares post-hoc scores. Scores computed on the six-way
-produce-type head separate in- from out-of-distribution images much better
-than scores on the binary freshness head (near-OOD AUROC
-\MnvEnergyNearAuroc\% for energy on the type head vs.\ \MnvMspFreshNearAuroc\%
-for MSP on the freshness head). For a two-class head, entropy is a monotone
-function of MSP, so entropy ranks inputs exactly like MSP. The previous
-version of the system rejected an input when freshness entropy exceeded
-1.5 bits or its maximum probability fell below 0.3; for a two-class head
-neither condition can occur (entropy is at most 1 bit and the maximum
-probability at least 0.5), so that gate never fired. With the threshold set at
-95\% validation TPR, the MobileNetV3 energy gate, averaged over three seeds,
-accepts \MnvGateTestIdAcceptRate\% of in-distribution test images and rejects
-\MnvGateFarOODRejectRate\% of CIFAR-10 images but only
-\MnvGateNearOODRejectRate\% of unseen produce (\MnvGateNearMin--\MnvGateNearMax\%
-across seeds; the deployed seed: \DeployGateAccept\%, \DeployGateFar\% and
-\DeployGateNear\%). A photo of an unsupported vegetable is the hard case.
+Table~\ref{tab:ood} compares the post-hoc scores, and Fig.~\ref{fig:ood} shows
+the energy scores of the deployed model. Scores computed on the six-way
+produce-type head separate supported from unsupported images much better than
+scores on the two-way freshness head: near-OOD AUROC is \MnvEnergyNearAuroc\%
+for energy on the type head and \MnvMspFreshNearAuroc\% for MSP on the
+freshness head. With only two classes, entropy is a monotone function of MSP
+and ranks inputs identically. The earlier version of the system rejected an
+image when freshness entropy exceeded 1.5 bits or the top probability fell
+below 0.3. Neither can happen with two classes (entropy is at most 1 bit and
+the top probability at least 0.5), so that gate never fired.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/ood.pdf}
+\caption{Energy scores of the deployed model. The dashed line is the gate
+threshold, set to accept 95\% of validation images. Unseen produce overlaps
+the accepted region far more than CIFAR-10 images do.}
+\label{fig:ood}
+\end{figure}
+
+At a threshold that keeps 95\% of validation images, the MobileNetV3 energy
+gate, averaged over three seeds, accepts \MnvGateTestIdAcceptRate\% of
+in-distribution test images and rejects \MnvGateFarOODRejectRate\% of CIFAR-10
+images, but only \MnvGateNearOODRejectRate\% of unseen produce
+(\MnvGateNearMin--\MnvGateNearMax\% across seeds; for the deployed seed,
+\DeployGateAccept\%, \DeployGateFar\% and \DeployGateNear\%).
+Fig.~\ref{fig:ood} makes the problem visible. Most CIFAR images fall well below
+the threshold, while unseen fruit and vegetables straddle it. A photo of a
+vegetable the model has never seen is the hard case.

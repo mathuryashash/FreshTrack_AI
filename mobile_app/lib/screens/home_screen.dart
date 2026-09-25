@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import '../models/prediction_result.dart';
-import '../services/api_service.dart';
+import '../services/classifier.dart';
 import '../services/database_service.dart';
 import '../widgets/result_card.dart';
 import 'result_screen.dart';
@@ -19,7 +19,6 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   @override
   bool get wantKeepAlive => true;
 
-  final _api = ApiService();
   final _picker = ImagePicker();
 
   File? _image;
@@ -29,6 +28,8 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   bool _showOodPopup = false; // For OOD (Object Not Recognized) fun pop-up
 
   Future<void> _pick(ImageSource source) async {
+    // Warm the model while the picker is open; errors resurface in _analyze.
+    Classifier.instance.load().ignore();
     // image_picker handles both sources via the system camera / photo picker,
     // so there is no custom camera screen (and no CAMERA permission) to fail.
     final XFile? picked;
@@ -60,19 +61,19 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   Future<void> _analyze(File file) async {
     setState(() { _loading = true; _error = null; _showOodPopup = false; });
     try {
-      final json = await _api.predict(file);
+      final scan = await Classifier.instance.classify(file.path);
       if (!mounted) return;
 
-      if (isObjectNotRecognized(json)) {
+      if (!scan.classification.isProduce) {
         setState(() { _loading = false; _showOodPopup = true; });
         return;
       }
 
-      final result = PredictionResult.fromJson(json, imagePath: file.path);
+      final result = scan.classification.toResult(imagePath: file.path);
       await DatabaseService.insert(result);
       if (mounted) setState(() { _result = result; });
     } catch (e) {
-      if (mounted) setState(() { _error = describeError(e); });
+      if (mounted) setState(() { _error = describeScanError(e); });
     } finally {
       if (mounted) setState(() { _loading = false; });
     }
@@ -98,7 +99,8 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.settings_outlined),
+            icon: const Icon(Icons.info_outline),
+            tooltip: 'About',
             onPressed: () => Navigator.pushNamed(context, '/settings'),
           ),
         ],

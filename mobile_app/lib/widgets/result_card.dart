@@ -7,7 +7,7 @@ class ResultCard extends StatelessWidget {
   const ResultCard({super.key, required this.result});
 
   Color get _statusColor {
-    // API labels since v2: 'Fresh' | 'Stale'.
+    // Model labels since v2: 'Fresh' | 'Stale'.
     switch (result.freshness) {
       case 'Fresh': return const Color(0xFF00E676);
       case 'Stale': return const Color(0xFFFF5252);
@@ -87,7 +87,7 @@ class ResultCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 14),
                     ],
-                    // Quality and shelf life are server-side heuristics from P(fresh).
+                    // Quality and shelf life are heuristics from P(fresh), not learned.
                     _MetricRow(label: 'Quality (est.)', value: result.quality, color: Colors.white),
                     const SizedBox(height: 14),
                     _MetricRow(

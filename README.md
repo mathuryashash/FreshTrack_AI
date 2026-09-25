@@ -71,18 +71,19 @@ docker run -p 8000:8000 --env-file .env \
 
 ## Mobile App (Flutter, `mobile_app/`)
 
-Android package `in.rvitm.freshtrack`. It talks to the API above and stores scan history (with copies of the images) in a local SQLite database.
+Android package `in.rvitm.freshtrack`. It runs the model on the phone with ONNX Runtime, so it needs no server and no internet (the release build does not request the INTERNET permission). Scan history, with copies of the images, is kept in a local SQLite database.
 
 ```bash
+python -m src.training.export_onnx      # model + metadata + parity fixture -> mobile_app/
 cd mobile_app
 flutter pub get
-flutter analyze && flutter test        # 21 tests
-flutter build apk --release            # build/app/outputs/flutter-apk/app-release.apk
+flutter analyze && flutter test         # 34 tests
+flutter build apk --release --split-per-abi   # arm64 APK ~52 MB
 ```
 
+- **Measurements** (APK size, RAM, cold start, latency, parity with PyTorch): see `docs/mobile_on_device_report.md` and `results/mobile_metrics.json`.
 - **Release signing**: put `storeFile`, `storePassword`, `keyAlias` and `keyPassword` in `android/key.properties`. Without that file, release builds fall back to the debug key. `key.properties` and `*.jks` are gitignored.
-- **HTTP**: plain `http://` (e.g. `http://10.0.2.2:8000` from the emulator) is allowed only in debug builds. Release builds require an `https://` API URL.
-- **Screenshots**: an end-to-end run on the Android 15 emulator is in `mobile_app/screenshots/`.
+- **Screenshots**: `mobile_app/screenshots/ondevice_*.png`, taken with networking switched off.
 
 ## API Endpoints
 

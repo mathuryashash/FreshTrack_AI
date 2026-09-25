@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'screens/home_screen.dart';
 import 'screens/history_screen.dart';
 import 'screens/settings_screen.dart';
@@ -52,7 +51,6 @@ class FreshTrackApp extends StatelessWidget {
         surfaceContainerHighest: card,
         outline: border,
       ),
-      textTheme: GoogleFonts.interTextTheme(ThemeData.dark().textTheme),
       cardTheme: CardThemeData(
         color: card,
         elevation: 0,

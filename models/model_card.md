@@ -44,7 +44,7 @@ All numbers below are copied from `results/summary.json` and `models/runs/*/metr
 - **Unseen capture sessions**: on held-out sessions (EfficientNet-B0, same protocol), freshness accuracy drops to 84.9 ± 2.5 % and ECE rises to 12.2 %.
 - **Capture-source shortcut**: the model learns capture source as a freshness cue.
   - In training, stale capsicums are all WhatsApp photos and camera capsicums are all fresh.
-  - As a result, an unseen session of camera-photographed stale capsicum was classified correctly only 7.1 % of the time.
+  - As a result, an unseen session of camera-photographed stale capsicum was classified correctly only 6.9 % of the time.
   - Expect similar errors wherever phone, app or lighting differ from the training data.
 - **Domain gap**: produce-type accuracy is 62.5 % on external retail-style photos, compared with 99.7 % in-domain.
 - **Unsupported produce**: about 14 % of unseen-produce images pass the OOD gate (23 % for the deployed seed).

@@ -327,28 +327,142 @@ def ood_table():
     )
 
 
+# ── Figures: one IEEE column wide, Times-like font, legends outside the data ──
+COLUMN_IN = 3.45
+PALETTE = {"per_file": "#c0392b", "grouped": "#2471a3", "session": "#e1a100"}
+plt.rcParams.update({
+    "font.family": "serif",
+    "font.serif": ["Times New Roman", "Times", "DejaVu Serif"],
+    "mathtext.fontset": "stix",
+    "font.size": 8,
+    "axes.labelsize": 8,
+    "xtick.labelsize": 7.5,
+    "ytick.labelsize": 7.5,
+    "legend.fontsize": 7.5,
+    "axes.spines.top": False,
+    "axes.spines.right": False,
+    "pdf.fonttype": 42,
+})
+
+
 def leakage_figure():
-    g, n = SUMMARY["b0_mtl"], SUMMARY["b0_mtl_naive"]
-    labels = ["HSV+LR\nfreshness", "HSV+LR\ntype", "B0 MTL\nfreshness", "B0 MTL\ntype"]
-    naive = [BASELINE["split_naive"]["freshness"]["accuracy"], BASELINE["split_naive"]["produce_type"]["accuracy"],
-             n["freshness_accuracy"]["mean"], n["produce_type_accuracy"]["mean"]]
-    grouped = [BASELINE["split"]["freshness"]["accuracy"], BASELINE["split"]["produce_type"]["accuracy"],
-               g["freshness_accuracy"]["mean"], g["produce_type_accuracy"]["mean"]]
-    x = range(len(labels))
-    fig, ax = plt.subplots(figsize=(3.4, 2.2))
-    w = 0.38
-    ax.bar([i - w / 2 for i in x], [100 * v for v in naive], w, label="Per-file split", color="#c8553d")
-    ax.bar([i + w / 2 for i in x], [100 * v for v in grouped], w, label="Grouped split", color="#2f6690")
-    ax.set_xticks(list(x))
-    ax.set_xticklabels(labels, fontsize=6.5)
-    ax.set_ylabel("Test accuracy (%)", fontsize=7)
-    ax.set_ylim(min(100 * v for v in grouped) - 10, 100)
-    ax.tick_params(axis="y", labelsize=6.5)
-    ax.legend(fontsize=6.5, frameon=False, loc="lower left")
-    ax.spines[["top", "right"]].set_visible(False)
-    fig.tight_layout()
-    FIG.mkdir(parents=True, exist_ok=True)
+    """Dot plot: accuracy of each model/task under the three protocols."""
+    g, n, s = SUMMARY["b0_mtl"], SUMMARY["b0_mtl_naive"], SUMMARY["b0_mtl_session"]
+    rows = [  # (label, per-file, grouped, held-out session or None)
+        ("HSV + LR, type", BASELINE["split_naive"]["produce_type"]["accuracy"],
+         BASELINE["split"]["produce_type"]["accuracy"], None),
+        ("HSV + LR, freshness", BASELINE["split_naive"]["freshness"]["accuracy"],
+         BASELINE["split"]["freshness"]["accuracy"], None),
+        ("CNN, type", n["produce_type_accuracy"]["mean"], g["produce_type_accuracy"]["mean"],
+         s["produce_type_accuracy"]["mean"]),
+        ("CNN, freshness", n["freshness_accuracy"]["mean"], g["freshness_accuracy"]["mean"],
+         s["freshness_accuracy"]["mean"]),
+    ]
+    fig, ax = plt.subplots(figsize=(COLUMN_IN, 1.95), constrained_layout=True)
+    for y, (_, pf, gr, se) in enumerate(rows):
+        vals = [100 * v for v in (pf, gr, se) if v is not None]
+        ax.plot([min(vals), max(vals)], [y, y], color="#b3b3b3", lw=1.2, zorder=1)
+        # Hollow per-file ring stays visible when a grouped square sits on top of it
+        ax.scatter(100 * pf, y, s=70, facecolors="none", edgecolors=PALETTE["per_file"], lw=1.4,
+                   marker="o", zorder=4)
+        ax.annotate(f"{100 * pf:.1f}", (100 * pf, y), xytext=(6, 0), textcoords="offset points",
+                    ha="left", va="center", fontsize=6.5, color=PALETTE["per_file"])
+        ax.scatter(100 * gr, y, s=26, color=PALETTE["grouped"], marker="s", zorder=3)
+        if se is not None:
+            ax.scatter(100 * se, y, s=40, color=PALETTE["session"], marker="D", zorder=3)
+            ax.annotate(f"{100 * se:.1f}", (100 * se, y), xytext=(0, -9), textcoords="offset points",
+                        ha="center", va="top", fontsize=6.5)
+        ax.annotate(f"{100 * gr:.1f}", (100 * gr, y), xytext=(0, 5), textcoords="offset points",
+                    ha="center", va="bottom", fontsize=6.5)
+    ax.set_yticks(range(len(rows)))
+    ax.set_yticklabels([r[0] for r in rows])
+    ax.set_ylim(-0.7, len(rows) - 0.3)
+    ax.set_xlim(76, 104.5)
+    ax.set_xticks([80, 85, 90, 95, 100])
+    ax.set_xlabel("Test accuracy (%)")
+    ax.grid(axis="x", color="#e6e6e6", lw=0.6)
+    ax.set_axisbelow(True)
+    handles = [
+        plt.Line2D([], [], markeredgecolor=PALETTE["per_file"], markerfacecolor="none", marker="o",
+                   ls="", mew=1.4, label="Per-file split"),
+        plt.Line2D([], [], color=PALETTE["grouped"], marker="s", ls="", label="Photo-grouped"),
+        plt.Line2D([], [], color=PALETTE["session"], marker="D", ls="", label="Unseen sessions"),
+    ]
+    fig.legend(handles=handles, loc="outside upper center", ncol=3, frameon=False,
+               handletextpad=0.3, columnspacing=1.0)
     fig.savefig(FIG / "leakage.pdf")
+    plt.close(fig)
+
+
+def session_figure():
+    """Per-stratum freshness accuracy on unseen capture sessions (horizontal bars)."""
+    held = SESSION_META["held_out_sessions"]
+    rows = []
+    for s in held:
+        t, f = s.split("|")
+        s_acc, s_n = _pooled_strata("b0_mtl_session", "freshness", [s])
+        g_acc, g_n = _pooled_strata("b0_mtl", "freshness", [s])
+        rows.append((f"{t.replace('_', ' ').capitalize()} ({f.lower()})", 100 * s_acc, s_n // 3,
+                     100 * g_acc if g_n else None))
+    rows.sort(key=lambda r: r[1])
+    fig, ax = plt.subplots(figsize=(COLUMN_IN, 2.35), constrained_layout=True)
+    ys = range(len(rows))
+    colors = ["#c0392b" if r[1] < 80 else "#7f8c8d" for r in rows]
+    ax.barh(ys, [r[1] for r in rows], color=colors, height=0.62, zorder=2)
+    for y, (_, acc, n_img, g) in zip(ys, rows):
+        # Label at the left end of wide bars so it never meets the grouped-test tick
+        # near the right end; narrow bars get the label just outside.
+        inside = acc > 45
+        ax.text(2 if inside else acc + 1.5, y, f"{acc:.1f}%  (n={n_img})",
+                va="center", ha="left", fontsize=6.5,
+                color="white" if inside else "black", zorder=3)
+        if g is not None:
+            ax.scatter(g, y, marker="|", s=90, color=PALETTE["grouped"], lw=1.6, zorder=4)
+    ax.set_yticks(list(ys))
+    ax.set_yticklabels([r[0] for r in rows])
+    ax.set_xlim(0, 104)
+    ax.set_xlabel("Freshness accuracy on the unseen session (%)")
+    ax.grid(axis="x", color="#e6e6e6", lw=0.6)
+    ax.set_axisbelow(True)
+    handles = [
+        plt.Rectangle((0, 0), 1, 1, color="#c0392b", label="Held-out session < 80%"),
+        plt.Line2D([], [], color=PALETTE["grouped"], marker="|", ls="", markersize=9, mew=1.6,
+                   label="Same stratum, photo-grouped test"),
+    ]
+    fig.legend(handles=handles, loc="outside upper center", ncol=2, frameon=False,
+               handletextpad=0.4, columnspacing=1.0)
+    fig.savefig(FIG / "sessions.pdf")
+    plt.close(fig)
+
+
+def ood_figure():
+    """Energy-score distributions of the deployed model, with the gate threshold."""
+    import numpy as np
+
+    d = json.loads((ROOT / "results/ood_scores_deployed.json").read_text())
+    series = [
+        ("in_distribution_test", "Supported produce (test)", PALETTE["grouped"]),
+        ("near_ood", "Unseen produce (near-OOD)", PALETTE["session"]),
+        ("far_ood", "CIFAR-10 (far-OOD)", PALETTE["per_file"]),
+    ]
+    lo = min(min(d[k]) for k, _, _ in series)
+    hi = max(max(d[k]) for k, _, _ in series)
+    bins = np.linspace(lo, hi, 45)
+    fig, ax = plt.subplots(figsize=(COLUMN_IN, 2.0), constrained_layout=True)
+    for key, label, color in series:
+        ax.hist(d[key], bins=bins, density=True, histtype="stepfilled", alpha=0.28, color=color)
+        ax.hist(d[key], bins=bins, density=True, histtype="step", lw=1.1, color=color, label=label)
+    ax.axvline(d["threshold"], color="black", lw=1.0, ls="--")
+    ymax = ax.get_ylim()[1]
+    ax.text(d["threshold"], ymax * 0.97, "  accept →", ha="left", va="top", fontsize=6.5)
+    ax.text(d["threshold"], ymax * 0.97, "← reject  ", ha="right", va="top", fontsize=6.5)
+    ax.set_xlabel("Energy score on the produce-type head")
+    ax.set_ylabel("Density")
+    ax.set_yticks([])
+    fig.legend(loc="outside upper center", ncol=2, frameon=False, handlelength=1.4,
+               columnspacing=1.0)
+    fig.savefig(FIG / "ood.pdf")
+    plt.close(fig)
 
 
 if __name__ == "__main__":
@@ -360,7 +474,28 @@ if __name__ == "__main__":
     )
     (OUT / "tables.tex").write_text(
         "% Generated by paper/make_tables.py - do not edit\n"
-        + split_table() + leakage_table() + sess_table + main_table() + ood_table()
+        + split_table() + leakage_table() + main_table() + ood_table()
     )
+    (OUT / "session_table.tex").write_text(sess_table)  # kept for reference; the paper uses the figure
+    mob = json.loads((ROOT / "results/mobile_metrics.json").read_text())
+    (OUT / "app_numbers.tex").write_text(
+        "% Generated by paper/make_tables.py from results/mobile_metrics.json - do not edit\n"
+        + macro("AppApkArm", f"{mob['apk_mib']['arm64-v8a']:.1f}")
+        + macro("AppApkArmSeven", f"{mob['apk_mib']['armeabi-v7a']:.1f}")
+        + macro("AppOrtMb", f"{mob['apk_contents_mb_arm64']['onnxruntime_lib']:.1f}")
+        + macro("AppModelMb", f"{mob['apk_contents_mb_arm64']['model']:.1f}")
+        + macro("AppParityN", str(mob["parity"]["n_images"]))
+        + macro("AppParityMaxDiff", f"{mob['parity']['max_abs_logit_diff']:.2f}")
+        + macro("AppPipeMs", f"{mob['latency_ms']['pipeline_median_min']}--{mob['latency_ms']['pipeline_median_max']}")
+        + macro("AppScanMs", str(mob["latency_ms"]["app_median"]))
+        + macro("AppColdMs", f"{mob['cold_start_ms_median'] / 1000:.1f}")
+        + macro("AppRamIdle", f"{mob['ram_pss_mb']['idle']:.0f}")
+        + macro("AppRamLoaded", f"{mob['ram_pss_mb']['model_loaded']:.0f}")
+        + macro("AppRamPeak", f"{mob['peak_rss_mb']:.0f}")
+        + macro("AppScanKb", f"{mob['storage_per_scan_kb_mean']:.0f}")
+    )
+    FIG.mkdir(parents=True, exist_ok=True)
     leakage_figure()
-    print(f"wrote {OUT / 'numbers.tex'}, {OUT / 'tables.tex'}, {FIG / 'leakage.pdf'}")
+    session_figure()
+    ood_figure()
+    print(f"wrote {OUT / 'numbers.tex'}, {OUT / 'tables.tex'}, figures leakage/sessions/ood.pdf")

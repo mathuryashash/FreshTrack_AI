@@ -12,6 +12,7 @@
 \usepackage[hidelinks]{hyperref}
 
 \input{generated/numbers.tex}
+\IfFileExists{generated/app_numbers.tex}{\input{generated/app_numbers.tex}}{}
 
 \begin{document}
 
@@ -43,124 +44,129 @@ Bengaluru, India}
 \end{abstract}
 
 \begin{IEEEkeywords}
-food quality, freshness classification, multi-task learning, data leakage, out-of-distribution detection, EfficientNet, mobile deployment
+food quality, freshness classification, data leakage, multi-task learning,
+out-of-distribution detection, on-device inference
 \end{IEEEkeywords}
 
 %===========================================================================
 \section{Introduction}
-In informal retail settings, fruit and vegetables are usually sorted by eye,
-without instrumented grading. A phone photograph that flags stale produce is an attractive
-low-cost aid, and public image datasets of ``fresh'' and ``rotten'' or
-``stale'' produce have made the task a popular benchmark: recent papers report
-accuracies close to 100\%~\cite{noisyvit2025}.
+In informal markets, fruit and vegetables are usually sorted by eye. A phone
+app that flags stale produce from a single photo would be a cheap aid for
+vendors and shoppers, and public datasets of fresh and rotten (or stale)
+produce have turned the idea into a popular benchmark. Reported accuracies sit
+close to 100\%~\cite{noisyvit2025}.
 
-Those numbers deserve scrutiny. Several of the most-used Kaggle releases ship
-\emph{pre-augmented} images: each source photograph appears many times as a
-rotated, flipped, translated or noise-corrupted copy. A split drawn per
-\emph{file} then places near-copies of a test image in the training set, the
-classic leakage failure mode described by Kaufman \emph{et al.}~\cite{kaufman2012leakage}
-and surveyed across applied ML by Kapoor and Narayanan~\cite{kapoor2023leakage}.
+We were suspicious of those numbers for a simple reason. Several of the most
+widely used Kaggle releases ship \emph{pre-augmented} images: the same
+photograph appears many times, rotated, flipped, shifted or sprinkled with
+noise. Split such a dataset at random, file by file, and near-copies of a test
+image end up in the training set. This is the textbook form of leakage
+described by Kaufman \emph{et al.}~\cite{kaufman2012leakage}, and Kapoor and
+Narayanan~\cite{kapoor2023leakage} show how widespread it is in applied
+machine learning.
 
-This paper studies freshness and produce-type recognition under a protocol that
-removes this leakage, and reports what remains. Our contributions are:
+This paper asks how much of the reported performance survives once that leakage
+is removed, and then pushes one level further, to the sessions in which the
+photographs were taken. We make four contributions.
 \begin{enumerate}
-\item A \textbf{leakage audit} of the Kaggle ``Fresh and Stale Images of Fruits
-and Vegetables'' dataset~\cite{kaggle_fresh_stale}: its \NImages{} images collapse into
-\NGroups{} near-duplicate clusters (\NFilenameGroups{} by filename alone), and a
-per-file split puts a sibling of \NaiveLeakPct\% of test images into training.
-A second, held-out-session analysis shows that the remaining in-domain accuracy
-partly rests on capture-session cues. We release both splits.
-\item A controlled comparison of a \textbf{multi-task} network (freshness +
-produce type) against single-task networks with identical backbones, and of
-EfficientNet-B0~\cite{tan2019efficientnet} against MobileNetV3-Large~\cite{howard2019mobilenetv3},
-over three seeds, with a group-bootstrap confidence interval for a single run.
-\item An evaluation of \textbf{post-hoc out-of-distribution (OOD) gates} for
-rejecting non-produce and unseen-produce photos, against an external dataset
-and CIFAR-10.
-\item An honest deployment design: attributes that have no ground truth in any
-available dataset (quality grade, remaining shelf life) are \emph{not} learned;
-they are reported as explicitly labelled heuristics.
+\item A leakage audit of the Kaggle ``Fresh and Stale Images of Fruits and
+Vegetables'' dataset~\cite{kaggle_fresh_stale}. Its \NImages{} images collapse
+into \NGroups{} near-duplicate clusters (\NFilenameGroups{} by file name
+alone), and a per-file split puts a sibling of \NaiveLeakPct\% of test images
+into training. A held-out-session analysis then shows that part of the
+remaining accuracy depends on how and when the photographs were taken. We
+release both splits.
+\item A controlled comparison of multi-task and single-task networks with
+identical backbones, and of EfficientNet-B0~\cite{tan2019efficientnet} and
+MobileNetV3-Large~\cite{howard2019mobilenetv3}, over three seeds.
+\item An evaluation of post-hoc out-of-distribution (OOD) gates that reject
+photos of unsupported produce and of things that are not produce at all.
+\item An Android app that runs the model entirely on the phone and shows
+quality grade and remaining shelf life, which no available dataset annotates,
+only as clearly labelled estimates.
 \end{enumerate}
 
 %===========================================================================
 \section{Related Work}
-\textbf{Freshness classification.} CNN and transformer classifiers trained on
-public fresh/rotten datasets report accuracies in the high 90s. Transfer-learned
-AlexNet reaches 99.8\% on a public fresh/rotten dataset~\cite{amin2023freshness},
-and a multi-task ResNet ensemble predicts freshness and fruit type jointly
-(98.5\% and 97.4\%)~\cite{kang2022ensemble}. Closest to our setting,
-Multi-Task NoisyViT~\cite{noisyvit2025} reports 99.85\% on the same
-Fresh/Stale dataset we use, with random 60/20/20 splits; the only
-deduplication it describes is MD5 hashing, applied when building its merged
-Freshness44 set. In~\cite{amin2023freshness} the data are
-rotation-augmented \emph{before} a random 80/10/10 split. None of these works
-groups augmented or near-duplicate copies of a source photo before splitting,
-and we found no freshness study that measures the resulting leakage.
+\textbf{Freshness classification.} Classifiers trained on public fresh/rotten
+datasets routinely report accuracies in the high 90s. Transfer-learned AlexNet
+reaches 99.8\% on one such dataset~\cite{amin2023freshness}, and a multi-task
+ResNet ensemble predicts freshness and fruit type together at 98.5\% and
+97.4\%~\cite{kang2022ensemble}. The closest work to ours is Multi-Task
+NoisyViT~\cite{noisyvit2025}, which reports 99.85\% on the same Fresh/Stale
+dataset using random 60/20/20 splits; the only deduplication it describes is MD5
+hashing, applied when building a merged Freshness44 set. In~\cite{amin2023freshness}
+the images are rotation-augmented \emph{before} a random 80/10/10 split. None of
+these papers keeps augmented or near-duplicate copies of a photograph on one
+side of the split, and we could not find a freshness study that measures how
+much this matters.
 
-\textbf{Shelf-life estimation.} Predicting remaining shelf life requires
-measured end points. Datasets that follow produce over time until spoilage
-exist~\cite{fruqdb2022}, and the recent CNN+DeiT study of~\cite{shelflife2026arxiv}
+\textbf{Shelf-life estimation.} Remaining shelf life cannot be learned without
+measuring it. Datasets that follow produce over time until it spoils do
+exist~\cite{fruqdb2022}, and a recent CNN+DeiT study~\cite{shelflife2026arxiv}
 forecasts spoilage with a symmetric mean absolute percentage error above 40\%.
-The dataset we use has no such measurements, so we treat shelf life as out of
-scope for learning.
+Our dataset has no such measurements, so we do not try to learn shelf life.
 
-\textbf{Multi-task learning.} Sharing a representation across related tasks
-can act as an inductive bias~\cite{caruana1997multitask,ruder2017overview};
-whether it helps depends on task relatedness, which we test directly.
+\textbf{Multi-task learning.} A shared representation can help related
+tasks~\cite{caruana1997multitask,ruder2017overview}, but only when the tasks
+really are related. We test this directly.
 
 \textbf{OOD detection.} Maximum softmax probability (MSP)~\cite{hendrycks2017baseline}
-and the energy score~\cite{liu2020energy} are standard post-hoc detectors that
-need no retraining, which suits on-device use.
+and the energy score~\cite{liu2020energy} need no retraining, which makes them
+easy to run on a phone.
 
 \textbf{Leakage.} Kaufman \emph{et al.}~\cite{kaufman2012leakage} formalise
-leakage; Kapoor and Narayanan~\cite{kapoor2023leakage} document its effect on
-published results across fields, including duplicated samples across splits.
+leakage in data mining, and Kapoor and Narayanan~\cite{kapoor2023leakage} show
+how often it inflates published results, with samples duplicated across splits
+among the causes.
 
 %===========================================================================
 \section{Data and Leakage Audit}
 \subsection{Datasets}
 \textbf{Main set.} The Kaggle ``Fresh and Stale Images of Fruits and
-Vegetables'' dataset~\cite{kaggle_fresh_stale} contains \NImages{} images of six
-produce types (apple, banana, bitter gourd, capsicum, orange, tomato), each
-labelled fresh or stale by folder. Both labels are used as ground truth.
+Vegetables'' dataset~\cite{kaggle_fresh_stale} has \NImages{} images of six
+produce types: apple, banana, bitter gourd, capsicum, orange and tomato. Each
+image is labelled fresh or stale by the folder it sits in, and we use both
+labels as ground truth.
 
-\textbf{External set.} The Kaggle ``Fruit and Vegetable Image
-Recognition'' dataset~\cite{kaggle_fruit_veg_recognition} (36 classes, no freshness
-labels) is used only for evaluation: its apple, banana, orange, tomato,
-capsicum and bell-pepper images (\NCross{}) form a cross-dataset produce-type
-test, and its \NNearOOD{} images of other classes form a near-OOD set. We drop
-\NExtDropped{} external images that near-duplicate a main-set image.
+\textbf{External set.} We use the Kaggle ``Fruit and Vegetable Image
+Recognition'' dataset~\cite{kaggle_fruit_veg_recognition} (36 classes, no
+freshness labels) for evaluation only. Its \NCross{} images of apple, banana,
+orange, tomato, capsicum and bell pepper form a cross-dataset test of produce
+type, and the \NNearOOD{} images of its other classes form a near-OOD set. We
+drop \NExtDropped{} external images that are near-duplicates of main-set images.
 
-\textbf{Far-OOD set.} 2,000 randomly drawn CIFAR-10 test
-images~\cite{krizhevsky2009cifar}, upsampled to the model input size.
+\textbf{Far-OOD set.} We draw 2,000 CIFAR-10 test images~\cite{krizhevsky2009cifar}
+at random and upsample them to the model's input size.
 
 \subsection{Leakage and the grouped split}
 \begin{sloppypar}
-File names in the main set encode the augmentation applied to a source photo
-(prefixes such as \texttt{rotated\_by\_15\_}, \texttt{saltandpepper\_},
-\texttt{translation\_}, \texttt{vertical\_flip\_} and \texttt{Copy of}, and
-suffixes such as \texttt{.jpg\_0\_4456.jpg}). We normalise each name back to
-its source and join files with the same source, within a produce type, into
-one group (\NFilenameGroups{} groups). We then compute a 64-bit difference hash
-of every image and merge groups whose images lie within a Hamming distance of
-2 bits, again only within a produce type (low-texture images of different
-produce otherwise collide). This yields \NGroups{} clusters.
+The file names tell you how each image was made. Prefixes such as
+\texttt{rotated\_by\_15\_}, \texttt{saltandpepper\_}, \texttt{translation\_},
+\texttt{vertical\_flip\_} and \texttt{Copy of}, and suffixes such as
+\texttt{.jpg\_0\_4456.jpg}, mark augmented copies of a source photo. We strip
+these markers, map every file back to its source name, and group files that
+share a source within a produce type (\NFilenameGroups{} groups). We then
+compute a 64-bit difference hash of every image and merge groups whose images
+are within 2 bits of each other, again only within a produce type, because
+low-texture images of different produce otherwise collide. The result is
+\NGroups{} clusters.
 \end{sloppypar}
 
-Because merging is transitive, a single chance match can join distinct
-photographs: \NMixedClusters{} clusters (\NMixedClusterImgs{} images) contain
-both fresh and stale images, and the largest has \MaxClusterSize{} images.
+Merging is transitive, so a single chance match can join two different
+photographs. \NMixedClusters{} clusters (\NMixedClusterImgs{} images) contain
+both fresh and stale images, and the largest holds \MaxClusterSize{} images.
 Over-merging cannot leak test images into training; it only makes the split
-coarser. We therefore call the units ``clusters'' rather than photographs.
+coarser. For that reason we call the units clusters rather than photographs.
 
-The grouped split assigns whole clusters to train, validation and test with
-stratified group $k$-fold sampling. Because some photo sessions contain
-hundreds of copies, we select, among 50 candidate seeds, the split whose
-per-stratum validation and test shares are closest to 15\% (seed \SplitSeed{});
-the result has \NTrain{}/\NVal{}/\NTest{} images and \NTestGroups{} independent
-test groups (Table~\ref{tab:split}). For comparison we also draw a per-file
-split with the same proportions. Under it, \NaiveLeakPct\% of test images have
-a group sibling in training.
+We assign whole clusters to train, validation and test with stratified group
+$k$-fold sampling. Some photo sessions contain hundreds of copies, so a single
+random draw can starve a class. We therefore try 50 seeds and keep the split
+whose per-stratum validation and test shares are closest to 15\% (seed
+\SplitSeed{}). It has \NTrain{}/\NVal{}/\NTest{} images and \NTestGroups{}
+independent test clusters (Table~\ref{tab:split}). For comparison we also draw a
+per-file split with the same proportions; under it, \NaiveLeakPct\% of test
+images have a sibling in training.
 
 \input{generated/tables.tex}
 
@@ -168,50 +174,51 @@ a group sibling in training.
 \section{Method}
 \subsection{Model}
 A timm~\cite{wightman2019timm} backbone pretrained on ImageNet~\cite{deng2009imagenet}
-(EfficientNet-B0 or MobileNetV3-Large) produces a pooled feature vector. Each
-task has its own head (dropout 0.3, linear 256, ReLU, dropout 0.2, linear to the
-task's classes): freshness (2 classes) and produce type (6 classes). The
-multi-task loss is the mean of the two cross-entropy terms; single-task
-baselines use the same backbone and head with one task.
+(EfficientNet-B0 or MobileNetV3-Large) produces a pooled feature vector, and each
+task gets its own small head: dropout 0.3, a 256-unit layer with ReLU, dropout
+0.2 and a linear output, with two classes for freshness and six for produce
+type. The multi-task loss is the mean of the two cross-entropy losses. The
+single-task baselines use the same backbone and head with one task.
 
 \subsection{Heuristic attributes}
-No available dataset contains graded quality or measured shelf life, so neither
-is learned. For the user interface only, the service reports a grade from the
-predicted $p=P(\text{fresh})$ (A if $p\ge0.85$, B if $p\ge0.5$, else C) and an
-indicative shelf life $d_t\,p$, where $d_t$ is a room-temperature reference for
-produce type $t$. Both fields are flagged as heuristic in the API and the app,
-and we make no accuracy claim about them.
+No dataset we could find contains graded quality or measured shelf life, so we
+learn neither. The app still shows both as rough guides, derived from the
+predicted $p=P(\text{fresh})$: grade A if $p\ge0.85$, B if $p\ge0.5$ and C
+otherwise, and an indicative shelf life of $d_t\,p$ days, where $d_t$ is a
+room-temperature reference for produce type $t$. Both fields are labelled as
+estimates, and we make no accuracy claim about them.
 
 \subsection{OOD gate}
-We compare four post-hoc scores: negative entropy of the freshness head (the
-gate used by the previous version of the system), MSP of the freshness head,
-MSP of the produce-type head~\cite{hendrycks2017baseline}, and the energy score
-(negative free energy at temperature 1) $\log\sum_k e^{z_k}$ of the
-produce-type logits~\cite{liu2020energy}. The
-deployed gate uses the energy score, with the threshold set to accept 95\% of
-validation images; the threshold is stored with the checkpoint.
+We compare four post-hoc scores: the negative entropy of the freshness head,
+which was the gate used by an earlier version of the system; the MSP of the
+freshness head; the MSP of the produce-type head~\cite{hendrycks2017baseline};
+and the energy score $\log\sum_k e^{z_k}$ over the produce-type logits, i.e.\ the
+negative free energy at temperature 1~\cite{liu2020energy}. The deployed gate
+uses the energy score. Its threshold accepts 95\% of validation images and is
+stored with the model.
 
-\subsection{Training and evaluation protocol}
+\subsection{Training and evaluation}
 Images are resized to $224\times224$ and normalised with ImageNet statistics.
-Training augmentation: random resized crop (scale 0.8--1), horizontal and
+During training we apply random resized crops (scale 0.8--1), horizontal and
 vertical flips, 90\textdegree{} rotations, colour jitter, Gaussian noise and
-coarse dropout. We train with AdamW~\cite{loshchilov2019adamw} (learning rate
-$3\times10^{-4}$, weight decay $10^{-4}$, batch 64), one epoch at 10\% of the
-base learning rate followed by cosine decay, mixed precision, gradient clipping at 1.0, up to 10 epochs
-with early stopping on validation loss (patience 3); runs stopped after
-\EpochsMin--\EpochsMax{} epochs. Each configuration is trained with seeds 0, 1
-and 2 and we report mean $\pm$ standard deviation; calibration is measured with the
-expected calibration error (ECE, 15 bins)~\cite{guo2017calibration}. For a single run we also
-report a 95\% confidence interval from 1,000 bootstrap resamples of
-\emph{test groups}~\cite{efron1994bootstrap}, since images within a group are
-not independent. As a floor we train a logistic-regression classifier on
-$8\times8\times8$ HSV colour histograms.
+coarse dropout. We use AdamW~\cite{loshchilov2019adamw} with a learning rate of
+$3\times10^{-4}$, weight decay $10^{-4}$ and batch size 64. The first epoch runs
+at 10\% of the base learning rate, followed by cosine decay. Training uses mixed
+precision and gradient clipping at 1.0, and stops early on validation loss
+(patience 3) after at most 10 epochs; in practice runs stopped after
+\EpochsMin--\EpochsMax{} epochs. Every configuration is trained with seeds 0, 1
+and 2, and we report the mean and standard deviation. Calibration is measured
+with the expected calibration error (ECE, 15 bins)~\cite{guo2017calibration}.
+Images from one cluster are not independent, so for a single run we report a
+95\% confidence interval from 1,000 bootstrap resamples of test clusters rather
+than images~\cite{efron1994bootstrap}. As a floor we train a logistic-regression
+classifier on $8\times8\times8$ HSV colour histograms.
 
-Hardware: one NVIDIA RTX 4060 Laptop GPU (8 GB) for training; latency is
-measured on the Intel Core i7-14700HX CPU with 4 threads, batch size 1, as the
-median of 200 runs interleaved across all models. Software:
-Python 3.13, PyTorch 2.12, timm 1.0.24, PyTorch Lightning 2.6.1,
-Albumentations 2.0.8. Code, split files and per-run logs are available at
+Training ran on one NVIDIA RTX 4060 Laptop GPU (8 GB). Latency is measured on
+an Intel Core i7-14700HX with 4 threads and batch size 1, as the median of 200
+runs interleaved across all models so that background load affects them
+equally. We used Python 3.13, PyTorch 2.12, timm 1.0.24, PyTorch Lightning 2.6.1
+and Albumentations 2.0.8. Code, splits and per-run logs are available at
 \url{https://github.com/mathuryashash/FreshTrack_AI}.
 
 %===========================================================================
@@ -220,18 +227,7 @@ Albumentations 2.0.8. Code, split files and per-run logs are available at
 
 %===========================================================================
 \section{Deployment}
-The model is served by a FastAPI service that validates uploads (content type,
-size, file signature, image decoding), applies EXIF orientation, runs the model,
-applies the OOD gate, and logs predictions and optional user corrections to
-SQLite for later relabelling. A Flutter client displays the freshness and
-produce-type predictions, labels the grade and shelf-life fields as estimates,
-and avoids food-safety wording (``looks fresh'' rather than ``safe to eat'').
-The checkpoint travels with a metadata file holding the label order,
-preprocessing constants and OOD threshold, so a client cannot silently use
-different preprocessing. We deploy the MobileNetV3-Large multi-task seed with
-the lowest validation loss. With \MnvParams{}\,M parameters and \MnvCpuMs\,ms
-CPU latency, on-device inference is feasible; exporting it to ONNX Runtime for
-offline use on phones is future work.
+\IfFileExists{sections/deployment.tex}{\input{sections/deployment.tex}}{}
 
 %===========================================================================
 \section{Limitations}

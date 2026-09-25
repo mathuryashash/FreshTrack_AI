@@ -1,0 +1,682 @@
+[
+ {
+  "file": "00_apple_fresh.png",
+  "label_freshness": "Fresh",
+  "label_produce_type": "apple",
+  "freshness_logits": [
+   11.20069408416748,
+   -9.080162048339844
+  ],
+  "produce_type_logits": [
+   13.88315486907959,
+   -3.259221076965332,
+   -3.1770052909851074,
+   -3.816282033920288,
+   -2.6863279342651367,
+   -6.014338970184326
+  ]
+ },
+ {
+  "file": "01_apple_fresh.png",
+  "label_freshness": "Fresh",
+  "label_produce_type": "apple",
+  "freshness_logits": [
+   5.127632141113281,
+   -4.395151615142822
+  ],
+  "produce_type_logits": [
+   12.338526725769043,
+   -3.3675343990325928,
+   -3.794440746307373,
+   -3.316056489944458,
+   -1.3137644529342651,
+   -4.8051838874816895
+  ]
+ },
+ {
+  "file": "02_apple_fresh.png",
+  "label_freshness": "Fresh",
+  "label_produce_type": "apple",
+  "freshness_logits": [
+   10.396628379821777,
+   -8.709097862243652
+  ],
+  "produce_type_logits": [
+   16.9476261138916,
+   -4.161128520965576,
+   -3.9071855545043945,
+   -5.477766990661621,
+   -2.3426992893218994,
+   -7.584339618682861
+  ]
+ },
+ {
+  "file": "03_apple_fresh.png",
+  "label_freshness": "Fresh",
+  "label_produce_type": "apple",
+  "freshness_logits": [
+   5.9372968673706055,
+   -5.105528354644775
+  ],
+  "produce_type_logits": [
+   13.958695411682129,
+   -2.738884687423706,
+   -4.154773712158203,
+   -4.637444019317627,
+   -1.5173215866088867,
+   -6.065217971801758
+  ]
+ },
+ {
+  "file": "04_apple_stale.png",
+  "label_freshness": "Stale",
+  "label_produce_type": "apple",
+  "freshness_logits": [
+   -9.054533958435059,
+   8.311963081359863
+  ],
+  "produce_type_logits": [
+   13.69795036315918,
+   -2.4143950939178467,
+   -5.284815788269043,
+   -5.835613250732422,
+   0.12714937329292297,
+   -5.785675048828125
+  ]
+ },
+ {
+  "file": "05_apple_stale.png",
+  "label_freshness": "Stale",
+  "label_produce_type": "apple",
+  "freshness_logits": [
+   -10.2713041305542,
+   9.850152015686035
+  ],
+  "produce_type_logits": [
+   14.200871467590332,
+   -4.1614155769348145,
+   -5.977914810180664,
+   -5.470137596130371,
+   0.1700088083744049,
+   -3.7044546604156494
+  ]
+ },
+ {
+  "file": "06_apple_stale.png",
+  "label_freshness": "Stale",
+  "label_produce_type": "apple",
+  "freshness_logits": [
+   -8.719361305236816,
+   8.309934616088867
+  ],
+  "produce_type_logits": [
+   12.16284465789795,
+   -4.388465404510498,
+   -5.344091415405273,
+   -4.212370872497559,
+   0.8579182624816895,
+   -3.4331910610198975
+  ]
+ },
+ {
+  "file": "07_apple_stale.png",
+  "label_freshness": "Stale",
+  "label_produce_type": "apple",
+  "freshness_logits": [
+   -5.48646354675293,
+   5.1958842277526855
+  ],
+  "produce_type_logits": [
+   8.410368919372559,
+   -2.351834774017334,
+   -4.102934837341309,
+   -4.085458278656006,
+   1.4827442169189453,
+   -1.4669514894485474
+  ]
+ },
+ {
+  "file": "08_banana_fresh.png",
+  "label_freshness": "Fresh",
+  "label_produce_type": "banana",
+  "freshness_logits": [
+   10.022335052490234,
+   -7.458083629608154
+  ],
+  "produce_type_logits": [
+   -4.151763439178467,
+   15.260390281677246,
+   -1.1706293821334839,
+   -3.6774544715881348,
+   -1.8134186267852783,
+   -6.425327301025391
+  ]
+ },
+ {
+  "file": "09_banana_fresh.png",
+  "label_freshness": "Fresh",
+  "label_produce_type": "banana",
+  "freshness_logits": [
+   9.407147407531738,
+   -6.79374361038208
+  ],
+  "produce_type_logits": [
+   -4.508113861083984,
+   14.334918975830078,
+   -0.9310755133628845,
+   -3.7529749870300293,
+   -1.2983548641204834,
+   -5.654651165008545
+  ]
+ },
+ {
+  "file": "10_banana_fresh.png",
+  "label_freshness": "Fresh",
+  "label_produce_type": "banana",
+  "freshness_logits": [
+   10.86971378326416,
+   -7.792455196380615
+  ],
+  "produce_type_logits": [
+   -3.667902708053589,
+   16.037675857543945,
+   -2.844677686691284,
+   -3.318608522415161,
+   -2.326974391937256,
+   -6.280157566070557
+  ]
+ },
+ {
+  "file": "11_banana_fresh.png",
+  "label_freshness": "Fresh",
+  "label_produce_type": "banana",
+  "freshness_logits": [
+   7.493181228637695,
+   -5.28876256942749
+  ],
+  "produce_type_logits": [
+   -3.629115104675293,
+   14.045780181884766,
+   -1.5889381170272827,
+   -3.671401262283325,
+   -1.6333539485931396,
+   -5.265592098236084
+  ]
+ },
+ {
+  "file": "12_banana_stale.png",
+  "label_freshness": "Stale",
+  "label_produce_type": "banana",
+  "freshness_logits": [
+   -8.024296760559082,
+   8.862517356872559
+  ],
+  "produce_type_logits": [
+   -1.8824869394302368,
+   14.730173110961914,
+   -0.7895644903182983,
+   -6.876013278961182,
+   -2.8744285106658936,
+   -5.869545936584473
+  ]
+ },
+ {
+  "file": "13_banana_stale.png",
+  "label_freshness": "Stale",
+  "label_produce_type": "banana",
+  "freshness_logits": [
+   -7.707271099090576,
+   8.405479431152344
+  ],
+  "produce_type_logits": [
+   -1.632627010345459,
+   13.258687019348145,
+   -0.8007999658584595,
+   -5.707223415374756,
+   -2.7842202186584473,
+   -5.380658149719238
+  ]
+ },
+ {
+  "file": "14_banana_stale.png",
+  "label_freshness": "Stale",
+  "label_produce_type": "banana",
+  "freshness_logits": [
+   -8.366509437561035,
+   8.778332710266113
+  ],
+  "produce_type_logits": [
+   -1.92709481716156,
+   14.35754108428955,
+   -1.201966404914856,
+   -5.650881767272949,
+   -2.8999128341674805,
+   -5.455507755279541
+  ]
+ },
+ {
+  "file": "15_banana_stale.png",
+  "label_freshness": "Stale",
+  "label_produce_type": "banana",
+  "freshness_logits": [
+   -7.619045257568359,
+   8.33796501159668
+  ],
+  "produce_type_logits": [
+   -3.0432968139648438,
+   14.283098220825195,
+   -1.3976985216140747,
+   -5.999236106872559,
+   -2.320434808731079,
+   -4.683386325836182
+  ]
+ },
+ {
+  "file": "16_bitter_gourd_fresh.jpg",
+  "label_freshness": "Fresh",
+  "label_produce_type": "bitter_gourd",
+  "freshness_logits": [
+   4.546469688415527,
+   -3.678511142730713
+  ],
+  "produce_type_logits": [
+   -3.7399141788482666,
+   -0.00236700102686882,
+   10.042173385620117,
+   -3.7930421829223633,
+   -3.869152545928955,
+   -4.499250888824463
+  ]
+ },
+ {
+  "file": "17_bitter_gourd_fresh.jpg",
+  "label_freshness": "Fresh",
+  "label_produce_type": "bitter_gourd",
+  "freshness_logits": [
+   3.8974974155426025,
+   -3.1593005657196045
+  ],
+  "produce_type_logits": [
+   -2.4639363288879395,
+   -0.4970181882381439,
+   8.766073226928711,
+   -3.6139066219329834,
+   -3.649989128112793,
+   -3.7034637928009033
+  ]
+ },
+ {
+  "file": "18_bitter_gourd_fresh.jpg",
+  "label_freshness": "Fresh",
+  "label_produce_type": "bitter_gourd",
+  "freshness_logits": [
+   4.121305465698242,
+   -3.314406156539917
+  ],
+  "produce_type_logits": [
+   -2.0043251514434814,
+   -0.7377395033836365,
+   9.369619369506836,
+   -3.9209964275360107,
+   -4.103180885314941,
+   -4.45326566696167
+  ]
+ },
+ {
+  "file": "19_bitter_gourd_fresh.jpg",
+  "label_freshness": "Fresh",
+  "label_produce_type": "bitter_gourd",
+  "freshness_logits": [
+   4.785688877105713,
+   -3.8818063735961914
+  ],
+  "produce_type_logits": [
+   -3.2776362895965576,
+   -0.2826959788799286,
+   11.211480140686035,
+   -4.732219219207764,
+   -4.671395301818848,
+   -5.265081405639648
+  ]
+ },
+ {
+  "file": "20_bitter_gourd_stale.jpg",
+  "label_freshness": "Stale",
+  "label_produce_type": "bitter_gourd",
+  "freshness_logits": [
+   -5.2733354568481445,
+   6.6379570960998535
+  ],
+  "produce_type_logits": [
+   -5.063867568969727,
+   -3.1945981979370117,
+   11.781327247619629,
+   -5.631141185760498,
+   -4.004759311676025,
+   -0.662663459777832
+  ]
+ },
+ {
+  "file": "21_bitter_gourd_stale.jpg",
+  "label_freshness": "Stale",
+  "label_produce_type": "bitter_gourd",
+  "freshness_logits": [
+   -4.943070888519287,
+   5.983060836791992
+  ],
+  "produce_type_logits": [
+   -4.944159984588623,
+   -2.1941580772399902,
+   11.252455711364746,
+   -4.835697650909424,
+   -3.7035114765167236,
+   -1.8665261268615723
+  ]
+ },
+ {
+  "file": "22_bitter_gourd_stale.jpg",
+  "label_freshness": "Stale",
+  "label_produce_type": "bitter_gourd",
+  "freshness_logits": [
+   -4.823553085327148,
+   5.801395893096924
+  ],
+  "produce_type_logits": [
+   -3.7572364807128906,
+   -1.2995604276657104,
+   9.881561279296875,
+   -4.609217166900635,
+   -3.115196466445923,
+   -2.504340648651123
+  ]
+ },
+ {
+  "file": "23_bitter_gourd_stale.jpg",
+  "label_freshness": "Stale",
+  "label_produce_type": "bitter_gourd",
+  "freshness_logits": [
+   -4.8872761726379395,
+   6.363033771514893
+  ],
+  "produce_type_logits": [
+   -5.756057262420654,
+   -2.8613829612731934,
+   12.189778327941895,
+   -5.2587504386901855,
+   -4.199359893798828,
+   -0.9086217880249023
+  ]
+ },
+ {
+  "file": "24_capsicum_fresh.jpg",
+  "label_freshness": "Fresh",
+  "label_produce_type": "capsicum",
+  "freshness_logits": [
+   13.63135051727295,
+   -12.192489624023438
+  ],
+  "produce_type_logits": [
+   -1.9440594911575317,
+   -6.529104709625244,
+   -3.9597039222717285,
+   16.16801643371582,
+   -7.410235404968262,
+   -7.761313438415527
+  ]
+ },
+ {
+  "file": "25_capsicum_fresh.jpg",
+  "label_freshness": "Fresh",
+  "label_produce_type": "capsicum",
+  "freshness_logits": [
+   8.48733139038086,
+   -7.403478145599365
+  ],
+  "produce_type_logits": [
+   -3.767272710800171,
+   -4.133347511291504,
+   -3.6905219554901123,
+   12.767448425292969,
+   -5.115157127380371,
+   -3.8177409172058105
+  ]
+ },
+ {
+  "file": "26_capsicum_fresh.jpg",
+  "label_freshness": "Fresh",
+  "label_produce_type": "capsicum",
+  "freshness_logits": [
+   11.538582801818848,
+   -10.091755867004395
+  ],
+  "produce_type_logits": [
+   -4.146000862121582,
+   -4.262665748596191,
+   -3.6419570446014404,
+   13.9233980178833,
+   -6.437222480773926,
+   -4.067647457122803
+  ]
+ },
+ {
+  "file": "27_capsicum_fresh.jpg",
+  "label_freshness": "Fresh",
+  "label_produce_type": "capsicum",
+  "freshness_logits": [
+   11.344766616821289,
+   -10.038304328918457
+  ],
+  "produce_type_logits": [
+   -4.018486022949219,
+   -5.356184005737305,
+   -4.013950347900391,
+   15.190038681030273,
+   -6.268542289733887,
+   -5.065725803375244
+  ]
+ },
+ {
+  "file": "28_orange_fresh.png",
+  "label_freshness": "Fresh",
+  "label_produce_type": "orange",
+  "freshness_logits": [
+   10.731485366821289,
+   -8.465253829956055
+  ],
+  "produce_type_logits": [
+   1.0633448362350464,
+   -3.99104380607605,
+   -4.954409599304199,
+   -5.405785083770752,
+   15.93850326538086,
+   -6.897878646850586
+  ]
+ },
+ {
+  "file": "29_orange_fresh.png",
+  "label_freshness": "Fresh",
+  "label_produce_type": "orange",
+  "freshness_logits": [
+   4.598680019378662,
+   -3.4769129753112793
+  ],
+  "produce_type_logits": [
+   4.54724645614624,
+   -3.442633867263794,
+   -4.257737636566162,
+   -4.169802188873291,
+   7.512351036071777,
+   -1.645595669746399
+  ]
+ },
+ {
+  "file": "30_orange_fresh.png",
+  "label_freshness": "Fresh",
+  "label_produce_type": "orange",
+  "freshness_logits": [
+   8.484299659729004,
+   -6.200725078582764
+  ],
+  "produce_type_logits": [
+   2.2648508548736572,
+   -3.902512311935425,
+   -8.188104629516602,
+   -7.737871170043945,
+   18.272781372070312,
+   -3.7297556400299072
+  ]
+ },
+ {
+  "file": "31_orange_fresh.png",
+  "label_freshness": "Fresh",
+  "label_produce_type": "orange",
+  "freshness_logits": [
+   2.236525535583496,
+   -1.6736501455307007
+  ],
+  "produce_type_logits": [
+   -1.2440863847732544,
+   -1.7592111825942993,
+   -3.253998279571533,
+   -3.3765270709991455,
+   8.432843208312988,
+   -0.5242483615875244
+  ]
+ },
+ {
+  "file": "32_orange_stale.png",
+  "label_freshness": "Stale",
+  "label_produce_type": "orange",
+  "freshness_logits": [
+   -8.264108657836914,
+   8.078202247619629
+  ],
+  "produce_type_logits": [
+   4.24678897857666,
+   -3.550715446472168,
+   -4.508288860321045,
+   -4.699803829193115,
+   7.090185165405273,
+   -0.7252917289733887
+  ]
+ },
+ {
+  "file": "33_orange_stale.png",
+  "label_freshness": "Stale",
+  "label_produce_type": "orange",
+  "freshness_logits": [
+   -3.6029882431030273,
+   3.3888590335845947
+  ],
+  "produce_type_logits": [
+   -0.7118033766746521,
+   -2.3016929626464844,
+   -2.78694486618042,
+   -3.1984450817108154,
+   10.453104019165039,
+   -3.446915864944458
+  ]
+ },
+ {
+  "file": "34_orange_stale.png",
+  "label_freshness": "Stale",
+  "label_produce_type": "orange",
+  "freshness_logits": [
+   -8.671662330627441,
+   8.122714042663574
+  ],
+  "produce_type_logits": [
+   -2.859823226928711,
+   -1.7133044004440308,
+   -3.767951726913452,
+   -5.462413311004639,
+   16.461959838867188,
+   -5.812991142272949
+  ]
+ },
+ {
+  "file": "35_orange_stale.png",
+  "label_freshness": "Stale",
+  "label_produce_type": "orange",
+  "freshness_logits": [
+   -8.987034797668457,
+   8.737520217895508
+  ],
+  "produce_type_logits": [
+   -2.0972676277160645,
+   -3.1812055110931396,
+   -3.8632750511169434,
+   -6.369053840637207,
+   15.006193161010742,
+   -2.54681658744812
+  ]
+ },
+ {
+  "file": "36_tomato_stale.jpg",
+  "label_freshness": "Stale",
+  "label_produce_type": "tomato",
+  "freshness_logits": [
+   -5.507661819458008,
+   5.664519786834717
+  ],
+  "produce_type_logits": [
+   0.47567084431648254,
+   -7.068026542663574,
+   -2.992413282394409,
+   -1.3333667516708374,
+   -3.585193634033203,
+   12.893377304077148
+  ]
+ },
+ {
+  "file": "37_tomato_stale.jpg",
+  "label_freshness": "Stale",
+  "label_produce_type": "tomato",
+  "freshness_logits": [
+   -5.330836296081543,
+   6.563876628875732
+  ],
+  "produce_type_logits": [
+   -3.951305389404297,
+   -6.01349401473999,
+   -1.9047805070877075,
+   -3.1804635524749756,
+   -3.226649761199951,
+   15.785418510437012
+  ]
+ },
+ {
+  "file": "38_tomato_stale.jpg",
+  "label_freshness": "Stale",
+  "label_produce_type": "tomato",
+  "freshness_logits": [
+   -6.652917861938477,
+   8.084755897521973
+  ],
+  "produce_type_logits": [
+   -4.687802314758301,
+   -3.0173416137695312,
+   -1.0574017763137817,
+   -2.746824026107788,
+   -5.023941516876221,
+   13.824750900268555
+  ]
+ },
+ {
+  "file": "39_tomato_stale.jpg",
+  "label_freshness": "Stale",
+  "label_produce_type": "tomato",
+  "freshness_logits": [
+   -8.240750312805176,
+   8.715264320373535
+  ],
+  "produce_type_logits": [
+   -0.9650630950927734,
+   -4.761363506317139,
+   -0.7423146367073059,
+   -4.4180073738098145,
+   -3.7149949073791504,
+   13.25905990600586
+  ]
+ }
+]

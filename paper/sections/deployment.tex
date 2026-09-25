@@ -1,0 +1,24 @@
+The app runs the model entirely on the phone, so photos never leave the device
+and no network connection is needed; the release build does not even request
+internet access. We export the deployed MobileNetV3-Large to ONNX in 32-bit
+floating point (\AppModelMb{}\,MB) and run it with ONNX Runtime inside a Flutter
+app. Dynamic 8-bit quantisation would cut the file to 5.1\,MB, but it changed
+many of the model's predictions, so we did not use it. The model ships with a
+metadata file holding the label order, preprocessing constants and OOD
+threshold, which keeps the app and the training code from drifting apart. The
+app labels the grade and shelf-life fields as estimates and avoids food-safety
+wording (``looks fresh'' rather than ``safe to eat'').
+
+We checked the port on \AppParityN{} held-out test images run through the full
+on-device pipeline, from JPEG or PNG decoding to the gate decision. Freshness,
+produce type and the gate decision agreed with PyTorch on every image; the
+largest logit difference, \AppParityMaxDiff{}, comes from the JPEG decoder rather
+than the model. The arm64 APK is \AppApkArm{}\,MB (\AppApkArmSeven{}\,MB for
+32-bit phones), of which the ONNX Runtime library and the model take
+\AppOrtMb{} and \AppModelMb{}\,MB. On an Android emulator with two virtual
+cores, preprocessing and inference take \AppPipeMs{}\,ms (median), a full scan
+in the app about \AppScanMs{}\,ms, and a cold start \AppColdMs{}\,s. Memory use
+is \AppRamIdle{}\,MB at idle and \AppRamLoaded{}\,MB once the model is loaded,
+peaking at \AppRamPeak{}\,MB during scans, and each saved scan adds about
+\AppScanKb{}\,kB of storage. Emulator timings are only a guide to phone
+performance, which we did not measure.

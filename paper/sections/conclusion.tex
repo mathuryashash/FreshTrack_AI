@@ -1,12 +1,11 @@
-Near-perfect accuracy on public fresh/stale produce benchmarks largely
-reflects the evaluation protocol. Removing augmented copies changes little for
-a CNN but a lot for a weak baseline, and holding out capture sessions reveals a
-drop in freshness accuracy, consistent with an acquisition-source shortcut,
-that per-image or per-photo splits cannot show. On the photo-grouped split, one
-multi-task MobileNetV3-Large recognises
-produce type and freshness as well as separate EfficientNet-B0 models at lower
-cost, and an energy gate on its produce-type head rejects most non-produce
-inputs. Progress on this problem now depends more on data than on
-architectures: multi-session, multi-location captures with time-to-spoilage
-measurements are needed before shelf-life prediction from RGB images can be
-evaluated at all.
+Near-perfect accuracy on public fresh/stale benchmarks says more about the
+evaluation protocol than about the models. Removing augmented copies changes
+little for a CNN and a great deal for a weak baseline. Holding out whole capture
+sessions exposes a larger drop, concentrated where the photographs of fresh and
+stale produce came from different sources, and neither per-image nor per-photo
+splits can show it. On the photo-grouped split, one multi-task
+MobileNetV3-Large recognises produce type and freshness as well as separate
+EfficientNet-B0 models at lower cost, runs offline on a phone, and rejects most
+images that are not produce. The next step is data rather than architecture.
+Photographs from many sessions, places and devices, taken until the produce
+spoils, are needed before shelf life can be predicted from RGB images at all.

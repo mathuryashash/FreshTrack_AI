@@ -1,23 +1,5 @@
-import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:freshtrack_mobile/models/prediction_result.dart';
-import 'package:freshtrack_mobile/services/api_service.dart';
-
-// Shape of a successful POST /predict response (src/api/main.py).
-const apiJson = <String, dynamic>{
-  'freshness': 'Stale',
-  'freshness_confidence': 0.91,
-  'produce_type': 'bitter_gourd',
-  'produce_type_confidence': 0.88,
-  'quality': 'C',
-  'quality_is_heuristic': true,
-  'shelf_life_days': 0.4,
-  'shelf_life_is_heuristic': true,
-  'entropy_score': 0.3,
-  'ood_score': 5.2,
-  'prediction_id': 'abc-123',
-  'model_version': 'v2',
-};
 
 PredictionResult make({String freshness = 'Fresh', double conf = 0.9, String? produce = 'tomato'}) =>
     PredictionResult(
@@ -31,19 +13,17 @@ PredictionResult make({String freshness = 'Fresh', double conf = 0.9, String? pr
 
 void main() {
   group('PredictionResult', () {
-    test('fromJson parses the /predict response', () {
-      final r = PredictionResult.fromJson(apiJson, imagePath: '/tmp/x.jpg');
-      expect(r.id, 'abc-123');
-      expect(r.freshness, 'Stale');
-      expect(r.freshnessConfidence, 0.91);
-      expect(r.produceType, 'bitter_gourd');
-      expect(r.quality, 'C');
-      expect(r.shelfLifeDays, 0.4);
-      expect(r.imagePath, '/tmp/x.jpg');
-    });
-
     test('toDb/fromDb round-trips every field including produce_type', () {
-      final r = PredictionResult.fromJson(apiJson, imagePath: 'scans/abc-123.jpg');
+      final r = PredictionResult(
+        id: 'abc-123',
+        freshness: 'Stale',
+        freshnessConfidence: 0.91,
+        produceType: 'bitter_gourd',
+        quality: 'Low (C)',
+        shelfLifeDays: 0.4,
+        timestamp: DateTime(2026, 9, 25, 10, 30),
+        imagePath: 'scans/abc-123.jpg',
+      );
       final back = PredictionResult.fromDb(r.toDb());
       expect(back.id, r.id);
       expect(back.freshness, r.freshness);
@@ -93,30 +73,6 @@ void main() {
         expect(l.toLowerCase(), isNot(matches(RegExp(r'\bsafe\b'))));
       }
       expect(PredictionResult.heuristicDisclaimer, contains('estimates'));
-    });
-  });
-
-  group('OOD response detection', () {
-    test('flat error string', () {
-      expect(isObjectNotRecognized({'error': 'OBJECT_NOT_RECOGNIZED', 'message': 'x'}), isTrue);
-    });
-    test('nested error object', () {
-      expect(isObjectNotRecognized({'error': {'code': 'OBJECT_NOT_RECOGNIZED'}}), isTrue);
-    });
-    test('normal prediction and other errors are not OOD', () {
-      expect(isObjectNotRecognized(apiJson), isFalse);
-      expect(isObjectNotRecognized({'error': 'SOMETHING_ELSE'}), isFalse);
-      expect(isObjectNotRecognized({'error': {'code': 'X'}}), isFalse);
-    });
-  });
-
-  group('describeError', () {
-    test('keeps image errors distinct from connection errors', () {
-      expect(describeError(ImageProcessingException('Could not read this image')),
-          'Could not read this image');
-      expect(describeError(const SocketException('refused')), contains('Could not connect'));
-      expect(describeError(ApiException(401, '')), contains('API key'));
-      expect(describeError(StateError('boom')), contains('boom'));
     });
   });
 }

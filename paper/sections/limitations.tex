@@ -1,15 +1,15 @@
-Capture sessions are inferred from file-name patterns, and hash-based
-clustering over-merges some distinct photographs, so both units are
-approximations. The held-out-session split covers only the \NHeldOutStrata{} strata that
-have more than one capture session; for the others no session-independent
-estimate exists, so grouped-split numbers remain optimistic upper bounds.
-Where fresh and stale images of a produce type were captured with different
-devices or apps, freshness is confounded with acquisition source; we can expose
-this confound but not remove it without new data. Freshness labels are the dataset
-authors' binary folder labels, without inter-rater agreement or intermediate
-ripeness stages. Most images show single items on plain backgrounds, and the
-low cross-dataset accuracy suggests performance on cluttered market photos
-will be lower still; we did not collect field images. CIFAR-10 images are
-low-resolution and upsampled, which makes them easy far-OOD examples. Latency
-was measured on a laptop CPU, not a phone. Finally, the quality grade and
-shelf-life values shown to users are heuristics without any validation.
+Both units of analysis are approximate. Capture sessions are inferred from
+file names, and hash-based clustering merges some distinct photographs. The
+held-out-session split covers only the \NHeldOutStrata{} strata that have more
+than one session; for the rest we have no session-independent estimate, and the
+grouped-split numbers should be read as upper bounds. Where the fresh and stale
+images of a produce type came from different devices or apps, freshness and
+acquisition source are confounded. We can expose that confound, but removing it
+needs new data. The freshness labels are the dataset authors' binary folder
+labels, with no inter-rater agreement and no intermediate ripeness stages. Most
+images show a single item on a plain background, and the low cross-dataset
+accuracy suggests that cluttered market photos will be harder still; we did not
+collect any field images. CIFAR-10 images are small and upsampled, which makes
+them an easy far-OOD test. Our latency figures come from a laptop CPU and an
+Android emulator rather than a range of real phones. Finally, the quality grade
+and shelf life shown to users are unvalidated heuristics.
