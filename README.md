@@ -54,9 +54,17 @@ python paper/make_tables.py              # LaTeX macros/tables/figure from resul
 
 ## Serve a model
 
+The served model is the deployment model `deploy_mnv3_v201` (trained on the original
+data plus real-world photos, gate threshold 5.0), not the research model reported in
+the paper. See DECISIONS.md §0.1.
+
 ```bash
-cp models/runs/mnv3_mtl_s1/best.ckpt      models/checkpoints/freshtrack_v2.ckpt
-cp models/runs/mnv3_mtl_s1/model_meta.json models/checkpoints/model_meta.json
+python -m src.training.train --name deploy_mnv3_v201 --metadata data/metadata_deploy.json \
+  --strong_aug --backbone mobilenetv3_large_100 --epochs 12 --num_workers 2
+cp models/runs/deploy_mnv3_v201/best.ckpt      models/checkpoints/freshtrack_v2.ckpt
+# served meta (labels, preprocessing, ood_threshold 5.0 from DECISIONS.md §0.1) is tracked with the app
+cp mobile_app/assets/model/model_meta.json     models/checkpoints/model_meta.json
+python -m src.training.export_onnx       # refresh the Android app's bundled model
 uvicorn src.api.main:app --host 0.0.0.0 --port 8000
 streamlit run src/app.py
 ```

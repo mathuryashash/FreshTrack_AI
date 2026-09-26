@@ -458,7 +458,7 @@ class _OodPopupState extends State<_OodPopup> with SingleTickerProviderStateMixi
             const SizedBox(height: 8),
             // Message
             const Text(
-              "That's not a fruit!",
+              "Couldn't recognise this",
               style: TextStyle(
                 color: Colors.white,
                 fontSize: 20,
@@ -468,7 +468,8 @@ class _OodPopupState extends State<_OodPopup> with SingleTickerProviderStateMixi
             ),
             const SizedBox(height: 8),
             const Text(
-              "We're detecting something else...\nTry with a fruit or vegetable!",
+              "Try a closer photo of one fruit or vegetable,\nfilling most of the frame.\n"
+              "Supported: apple, banana, bitter gourd,\ncapsicum, orange, tomato.",
               style: TextStyle(
                 color: Colors.white70,
                 fontSize: 14,

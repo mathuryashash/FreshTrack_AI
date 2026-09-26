@@ -37,7 +37,7 @@ void main() {
       expect(meta.outputNames, ['freshness', 'produce_type']);
       expect(meta.mean, [0.485, 0.456, 0.406]);
       expect(meta.std, [0.229, 0.224, 0.225]);
-      expect(meta.oodThreshold, closeTo(8.284, 1e-3));
+      expect(meta.oodThreshold, closeTo(5.0, 1e-3));
       expect(meta.version, startsWith('mobilenetv3_large_100 @ '));
     });
 

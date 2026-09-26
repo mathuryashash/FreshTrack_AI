@@ -33,6 +33,61 @@ training. v2 changes:
 Results and their provenance: `results/summary.md`, `results/summary.json`,
 `results/baseline.json`. Sections below describe v1 and are kept for history.
 
+### 0.1 Deployment model and gate threshold (2026-09-26, app v2.0.1)
+
+**Problem.** A user photo of bananas held in a hand was rejected by the v2.0.0 app
+as "not a fruit". On hand-labelled web photos (`results/realworld_web/`) the
+research model `mnv3_mtl_s1` accepted 25% and named the type correctly for 43%,
+while scoring 99.9% on its own grouped test split: the training photos come from
+few capture sessions of single items on plain backgrounds.
+
+**Change.** The served model is now `deploy_mnv3_v201`: same MobileNetV3-Large
+multi-task architecture, trained on `data/metadata_deploy.json` (original data plus
+two real-world Kaggle produce sets, `src/data/build_deploy_set.py`) with
+`--strong_aug`. The research model and all paper numbers are unchanged.
+Comparison (`python -m src.training.evaluate_deploy models/runs/mnv3_mtl_s1
+models/runs/deploy_mnv3_v201`, `results/deploy_eval.json`), each at its own
+95%-val threshold:
+
+| Set | Research model: accepted / type correct | Deployment model |
+|---|---|---|
+| Web photos (60 after near-duplicate removal) | 25% / 43% | 32% / 77% |
+| Real-world fruit test split (613) | 36% / 59% | 89% / 98% |
+| Real-world vegetable test split (600) | 10% / 22% | 99% / 100% |
+| Original grouped test split (1788) | 94.5% / 99.9% | 95.3% / 99.9% |
+| Unsupported produce, test half (5393), accepted | 26% | 13% |
+| CIFAR-10 (2000), accepted | 5.9% | 1.5% |
+
+**Gate threshold 5.0, not the 95%-val quantile (6.52).** At 6.52 the gate still
+rejected 68% of web photos. Cluttered real photos and unsupported produce have
+overlapping energy, so no threshold separates them. Sweep
+(`python -m src.training.gate_sweep models/runs/deploy_mnv3_v201`; web = 61 labelled
+photos + the user banana, no dedup):
+
+| Threshold | Deploy val | Web photos (n=62) | Unsupported produce (n=22798) | CIFAR-10 (n=2000) |
+|---|---|---|---|---|
+| 6.52 | 95.0% | 32.3% | 11.9% | 1.5% |
+| 6.0 | 96.3% | 37.1% | 16.2% | 2.1% |
+| 5.5 | 97.6% | 38.7% | 21.3% | 4.0% |
+| **5.0** | **98.6%** | **51.6%** | **28.6%** | **6.6%** |
+| 4.5 | 99.0% | 61.3% | 37.7% | 11.2% |
+| 4.0 | 99.4% | 67.7% | 48.7% | 19.1% |
+| 3.0 | 99.8% | 88.7% | 74.1% | 50.8% |
+
+5.0 roughly doubles real-photo acceptance over v2.0.0 while keeping CIFAR
+acceptance at the v2.0.0 level (~6%). Cost: more unsupported produce (e.g. mango)
+gets a guessed label instead of a rejection. Because many rejections are now real
+produce in a busy photo, the app's rejection text says "Couldn't recognise this"
+and asks for a closer photo, instead of "That's not a fruit!".
+
+The threshold lives in `models/checkpoints/model_meta.json` (`ood_threshold`,
+`ood_threshold_basis`), read by both the API and, via `src/training/export_onnx.py`,
+the app. `src/training/evaluate.py` does not support the deployment metadata
+(vegetable images have no freshness label), so that file was written at promotion.
+Rollback: copy `models/runs/mnv3_mtl_s1/{best.ckpt,model_meta.json}` to
+`models/checkpoints/` (as `freshtrack_v2.ckpt`, `model_meta.json`) and re-export.
+The user banana scores 8.84 and passes at every threshold above.
+
 ---
 
 ## 1. Model Architecture Decisions

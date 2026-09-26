@@ -28,9 +28,11 @@
     0.225
   ],
   "ood_score": "energy_produce_type",
-  "ood_threshold": 8.28413200378418,
-  "metadata_sha256": "4a578ce97831210e75f172b3af0c6c1d4822e287a9c5a5873d7c3f067fefd559",
-  "git_sha": "74ad4d75fa031ae734fab2a11c36442e7fdb69e1",
+  "ood_threshold": 5.0,
+  "metadata_sha256": "c94a2a3682d2c33b6f55ccdc532742db280ab34f91ecf2fee4924217c46c9bc5",
+  "git_sha": "f7dc54a48f0c423ce3cb60e36eee9900cf8d130e",
+  "ood_threshold_basis": "DECISIONS.md 0.1 gate sweep: accepts 98.6% of deploy val and 51.6% of real web photos; 28.6% of unsupported produce and 6.6% of CIFAR-10",
+  "run": "deploy_mnv3_v201",
   "onnx_file": "freshtrack.onnx",
   "input_name": "input",
   "output_names": [

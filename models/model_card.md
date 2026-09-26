@@ -3,7 +3,7 @@
 All numbers below are copied from `results/summary.json` and `models/runs/*/metrics.json`, which `src/training/run_experiment.py` produces. Regenerate them rather than editing by hand.
 
 ## Model Details
-- **Version**: v2.0.0 (deployed run `models/runs/mnv3_mtl_s1`, chosen by lowest validation loss among three seeds)
+- **Version**: v2.0.0 research model (`models/runs/mnv3_mtl_s1`, chosen by lowest validation loss among three seeds). This card and the paper describe this model. Since app/API v2.0.1 the *served* model is `deploy_mnv3_v201` (same architecture, trained with added real-world photos, gate threshold 5.0); its evaluation is in DECISIONS.md §0.1 and `results/deploy_eval.json`.
 - **Developer**: Yashash Mathur
 - **Date**: 2026-09-25
 - **Architecture**: MobileNetV3-Large (timm `mobilenetv3_large_100`, ImageNet-pretrained) with two heads
