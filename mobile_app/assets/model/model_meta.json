@@ -28,12 +28,12 @@
     0.225
   ],
   "ood_score": "energy_produce_type",
-  "ood_threshold": 5.0,
-  "metadata_sha256": "c94a2a3682d2c33b6f55ccdc532742db280ab34f91ecf2fee4924217c46c9bc5",
-  "git_sha": "f7dc54a48f0c423ce3cb60e36eee9900cf8d130e",
-  "ood_threshold_basis": "DECISIONS.md 0.1 gate sweep: accepts 98.6% of deploy val and 51.6% of real web photos; 28.6% of unsupported produce and 6.6% of CIFAR-10",
-  "run": "deploy_mnv3_v201",
-  "onnx_file": "freshtrack.onnx",
+  "ood_threshold": 5.344115257263184,
+  "metadata_sha256": "b542e3fd74c8ffc906f1ab3c4a0d3b3b21c4d5399c1e70a1517be172f2a71bf8",
+  "git_sha": "c2eb1a8c14547edf9a190b9e8f4589e95b10c37d",
+  "ood_threshold_basis": "matched to deploy_mnv3_v201 at 5.000: both accept 28.9% of 3000 unsupported-produce photos (OOD val half)",
+  "run": "deploy_mnv3_v210",
+  "onnx_file": "freshtrack-3f926a04a543.onnx",
   "input_name": "input",
   "output_names": [
     "freshness",

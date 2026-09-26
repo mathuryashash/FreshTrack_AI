@@ -3,7 +3,7 @@
 All numbers below are copied from `results/summary.json` and `models/runs/*/metrics.json`, which `src/training/run_experiment.py` produces. Regenerate them rather than editing by hand.
 
 ## Model Details
-- **Version**: v2.0.0 research model (`models/runs/mnv3_mtl_s1`, chosen by lowest validation loss among three seeds). This card and the paper describe this model. Since app/API v2.0.1 the *served* model is `deploy_mnv3_v201` (same architecture, trained with added real-world photos, gate threshold 5.0); its evaluation is in DECISIONS.md §0.1 and `results/deploy_eval.json`.
+- **Version**: v2.0.0 research model (`models/runs/mnv3_mtl_s1`, chosen by lowest validation loss among three seeds). This card and the paper describe this model. The *served* models differ: app/API v2.0.1 used `deploy_mnv3_v201` (same architecture, trained with added real-world photos, gate 5.0; DECISIONS.md §0.1, `results/deploy_eval.json`). App v2.1.0 serves `deploy_mnv3_v210` (v201 fine-tuned on crops of produce in real and synthetic scenes, gate 5.344 matched to v201's false-accept rate on validation) behind an SSDlite produce detector; see DECISIONS.md §0.2, `results/deploy_eval_served.json` and `results/detection_eval.json`.
 - **Developer**: Yashash Mathur
 - **Date**: 2026-09-25
 - **Architecture**: MobileNetV3-Large (timm `mobilenetv3_large_100`, ImageNet-pretrained) with two heads

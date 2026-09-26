@@ -1,0 +1,1566 @@
+{
+  "gates": {
+    "v2.0.1": {
+      "whole": 5.0,
+      "crop": null,
+      "detector": null
+    },
+    "whole": {
+      "whole": 5.344115257263184,
+      "crop": null,
+      "detector": null
+    },
+    "prototype": {
+      "whole": 5.344115257263184,
+      "crop": 5.800306797027588,
+      "detector": 0.3
+    },
+    "detector": {
+      "whole": 5.344115257263184,
+      "crop": 5.503493309020996,
+      "detector": 0.35
+    }
+  },
+  "served_classifier_run": "deploy_mnv3_v210",
+  "calibration": {
+    "prototype": {
+      "n_photos": 1000,
+      "whole_photo_false_accept": 0.283,
+      "crop_gate": 5.800306797027588,
+      "false_accept_at_crop_gate": 0.283,
+      "false_accept_if_crops_used_gate": 0.323,
+      "detected_share": 0.458
+    },
+    "detector": {
+      "n_photos": 1000,
+      "whole_photo_false_accept": 0.283,
+      "crop_gate": 5.503493309020996,
+      "false_accept_at_crop_gate": 0.283,
+      "false_accept_if_crops_used_gate": 0.31,
+      "detected_share": 0.997
+    }
+  },
+  "web": {
+    "n": 62,
+    "dropped_near_duplicates": 1,
+    "methods": {
+      "v2.0.1": {
+        "item_found": 0.5161290322580645,
+        "top_item_type_correct": 0.45161290322580644,
+        "any_item_type_correct": 0.45161290322580644,
+        "freshness_acc_when_type_correct": 0.9629629629629629,
+        "n_freshness": 27
+      },
+      "whole": {
+        "item_found": 0.5806451612903226,
+        "top_item_type_correct": 0.532258064516129,
+        "any_item_type_correct": 0.532258064516129,
+        "freshness_acc_when_type_correct": 0.9375,
+        "n_freshness": 32
+      },
+      "prototype": {
+        "item_found": 0.7258064516129032,
+        "top_item_type_correct": 0.6774193548387096,
+        "any_item_type_correct": 0.6774193548387096,
+        "freshness_acc_when_type_correct": 0.9,
+        "n_freshness": 40
+      },
+      "detector": {
+        "item_found": 0.7741935483870968,
+        "top_item_type_correct": 0.7258064516129032,
+        "any_item_type_correct": 0.7258064516129032,
+        "freshness_acc_when_type_correct": 0.9302325581395349,
+        "n_freshness": 43
+      }
+    },
+    "per_photo": {
+      "banana_fresh_00.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "banana"
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "banana"
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "banana"
+        },
+        "detector": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "banana"
+        }
+      },
+      "banana_fresh_08.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "banana"
+        },
+        "detector": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "banana"
+        }
+      },
+      "banana_fresh_10.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "banana"
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "banana"
+        },
+        "detector": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "banana"
+        }
+      },
+      "banana_fresh_11.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "banana"
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "banana"
+        },
+        "prototype": {
+          "n_items": 7,
+          "n_accepted": 7,
+          "top_type": "banana"
+        },
+        "detector": {
+          "n_items": 6,
+          "n_accepted": 6,
+          "top_type": "banana"
+        }
+      },
+      "banana_stale_01.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "banana"
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "banana"
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "banana"
+        },
+        "detector": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        }
+      },
+      "banana_stale_02.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "banana"
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "banana"
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "banana"
+        },
+        "detector": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "banana"
+        }
+      },
+      "banana_stale_06.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "banana"
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "banana"
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "banana"
+        },
+        "detector": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "banana"
+        }
+      },
+      "apple_fresh_01.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "apple"
+        },
+        "detector": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "apple"
+        }
+      },
+      "apple_fresh_02.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "tomato"
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "tomato"
+        },
+        "prototype": {
+          "n_items": 2,
+          "n_accepted": 1,
+          "top_type": "apple"
+        },
+        "detector": {
+          "n_items": 3,
+          "n_accepted": 1,
+          "top_type": "apple"
+        }
+      },
+      "apple_fresh_03.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "apple"
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "apple"
+        },
+        "prototype": {
+          "n_items": 4,
+          "n_accepted": 3,
+          "top_type": "apple"
+        },
+        "detector": {
+          "n_items": 3,
+          "n_accepted": 2,
+          "top_type": "apple"
+        }
+      },
+      "apple_fresh_04.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "apple"
+        },
+        "prototype": {
+          "n_items": 2,
+          "n_accepted": 2,
+          "top_type": "apple"
+        },
+        "detector": {
+          "n_items": 5,
+          "n_accepted": 5,
+          "top_type": "apple"
+        }
+      },
+      "apple_fresh_05.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "apple"
+        },
+        "prototype": {
+          "n_items": 4,
+          "n_accepted": 4,
+          "top_type": "apple"
+        },
+        "detector": {
+          "n_items": 6,
+          "n_accepted": 4,
+          "top_type": "apple"
+        }
+      },
+      "apple_fresh_06.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "apple"
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "apple"
+        },
+        "prototype": {
+          "n_items": 5,
+          "n_accepted": 5,
+          "top_type": "apple"
+        },
+        "detector": {
+          "n_items": 5,
+          "n_accepted": 5,
+          "top_type": "apple"
+        }
+      },
+      "apple_fresh_07.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "apple"
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "apple"
+        },
+        "detector": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "apple"
+        }
+      },
+      "apple_fresh_08.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "apple"
+        },
+        "prototype": {
+          "n_items": 8,
+          "n_accepted": 7,
+          "top_type": "apple"
+        },
+        "detector": {
+          "n_items": 2,
+          "n_accepted": 2,
+          "top_type": "apple"
+        }
+      },
+      "apple_fresh_10.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "apple"
+        },
+        "prototype": {
+          "n_items": 6,
+          "n_accepted": 6,
+          "top_type": "apple"
+        },
+        "detector": {
+          "n_items": 7,
+          "n_accepted": 7,
+          "top_type": "apple"
+        }
+      },
+      "apple_fresh_11.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "apple"
+        },
+        "prototype": {
+          "n_items": 8,
+          "n_accepted": 7,
+          "top_type": "apple"
+        },
+        "detector": {
+          "n_items": 3,
+          "n_accepted": 3,
+          "top_type": "apple"
+        }
+      },
+      "apple_stale_02.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "apple"
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "apple"
+        },
+        "detector": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "apple"
+        }
+      },
+      "apple_stale_03.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "prototype": {
+          "n_items": 6,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "detector": {
+          "n_items": 8,
+          "n_accepted": 1,
+          "top_type": "apple"
+        }
+      },
+      "apple_stale_04.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "detector": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        }
+      },
+      "apple_stale_05.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "apple"
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "apple"
+        },
+        "detector": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        }
+      },
+      "apple_stale_08.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "apple"
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "apple"
+        },
+        "detector": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "apple"
+        }
+      },
+      "apple_stale_10.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "detector": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        }
+      },
+      "orange_fresh_00.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "orange"
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "orange"
+        },
+        "prototype": {
+          "n_items": 4,
+          "n_accepted": 4,
+          "top_type": "orange"
+        },
+        "detector": {
+          "n_items": 3,
+          "n_accepted": 3,
+          "top_type": "orange"
+        }
+      },
+      "orange_fresh_03.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "orange"
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "orange"
+        },
+        "prototype": {
+          "n_items": 4,
+          "n_accepted": 4,
+          "top_type": "orange"
+        },
+        "detector": {
+          "n_items": 3,
+          "n_accepted": 3,
+          "top_type": "orange"
+        }
+      },
+      "orange_fresh_09.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "orange"
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "orange"
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "orange"
+        },
+        "detector": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "orange"
+        }
+      },
+      "orange_stale_03.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "orange"
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "orange"
+        },
+        "detector": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "orange"
+        }
+      },
+      "orange_stale_11.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "prototype": {
+          "n_items": 2,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "detector": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        }
+      },
+      "tomato_fresh_00.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "detector": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        }
+      },
+      "tomato_fresh_02.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "tomato"
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "detector": {
+          "n_items": 6,
+          "n_accepted": 4,
+          "top_type": "tomato"
+        }
+      },
+      "tomato_fresh_03.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "detector": {
+          "n_items": 8,
+          "n_accepted": 3,
+          "top_type": "tomato"
+        }
+      },
+      "tomato_fresh_04.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "tomato"
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "tomato"
+        },
+        "detector": {
+          "n_items": 6,
+          "n_accepted": 4,
+          "top_type": "tomato"
+        }
+      },
+      "tomato_fresh_05.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "tomato"
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "tomato"
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "tomato"
+        },
+        "detector": {
+          "n_items": 5,
+          "n_accepted": 2,
+          "top_type": "tomato"
+        }
+      },
+      "tomato_fresh_07.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "detector": {
+          "n_items": 3,
+          "n_accepted": 2,
+          "top_type": "tomato"
+        }
+      },
+      "tomato_fresh_08.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "tomato"
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "tomato"
+        },
+        "prototype": {
+          "n_items": 2,
+          "n_accepted": 2,
+          "top_type": "tomato"
+        },
+        "detector": {
+          "n_items": 5,
+          "n_accepted": 2,
+          "top_type": "tomato"
+        }
+      },
+      "tomato_fresh_09.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "capsicum"
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "tomato"
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "tomato"
+        },
+        "detector": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "tomato"
+        }
+      },
+      "tomato_fresh_10.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "tomato"
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "prototype": {
+          "n_items": 4,
+          "n_accepted": 1,
+          "top_type": "orange"
+        },
+        "detector": {
+          "n_items": 6,
+          "n_accepted": 1,
+          "top_type": "orange"
+        }
+      },
+      "tomato_fresh_11.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "tomato"
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "tomato"
+        },
+        "detector": {
+          "n_items": 6,
+          "n_accepted": 4,
+          "top_type": "tomato"
+        }
+      },
+      "tomato_stale_04.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "detector": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        }
+      },
+      "tomato_stale_05.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "prototype": {
+          "n_items": 3,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "detector": {
+          "n_items": 2,
+          "n_accepted": 0,
+          "top_type": null
+        }
+      },
+      "tomato_stale_06.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "detector": {
+          "n_items": 2,
+          "n_accepted": 0,
+          "top_type": null
+        }
+      },
+      "tomato_stale_08.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "tomato"
+        },
+        "prototype": {
+          "n_items": 3,
+          "n_accepted": 3,
+          "top_type": "tomato"
+        },
+        "detector": {
+          "n_items": 2,
+          "n_accepted": 2,
+          "top_type": "tomato"
+        }
+      },
+      "tomato_stale_09.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "tomato"
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "tomato"
+        },
+        "detector": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "tomato"
+        }
+      },
+      "capsicum_fresh_00.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "prototype": {
+          "n_items": 2,
+          "n_accepted": 1,
+          "top_type": "capsicum"
+        },
+        "detector": {
+          "n_items": 5,
+          "n_accepted": 3,
+          "top_type": "capsicum"
+        }
+      },
+      "capsicum_fresh_01.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "tomato"
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "detector": {
+          "n_items": 3,
+          "n_accepted": 1,
+          "top_type": "capsicum"
+        }
+      },
+      "capsicum_fresh_05.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "capsicum"
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "capsicum"
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "capsicum"
+        },
+        "detector": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "capsicum"
+        }
+      },
+      "capsicum_fresh_06.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "capsicum"
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "capsicum"
+        },
+        "prototype": {
+          "n_items": 3,
+          "n_accepted": 2,
+          "top_type": "capsicum"
+        },
+        "detector": {
+          "n_items": 5,
+          "n_accepted": 2,
+          "top_type": "capsicum"
+        }
+      },
+      "capsicum_fresh_07.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "capsicum"
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "prototype": {
+          "n_items": 6,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "detector": {
+          "n_items": 4,
+          "n_accepted": 0,
+          "top_type": null
+        }
+      },
+      "capsicum_fresh_08.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "capsicum"
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "capsicum"
+        },
+        "detector": {
+          "n_items": 7,
+          "n_accepted": 5,
+          "top_type": "capsicum"
+        }
+      },
+      "capsicum_fresh_09.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "capsicum"
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "prototype": {
+          "n_items": 8,
+          "n_accepted": 5,
+          "top_type": "capsicum"
+        },
+        "detector": {
+          "n_items": 6,
+          "n_accepted": 5,
+          "top_type": "capsicum"
+        }
+      },
+      "capsicum_fresh_10.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "prototype": {
+          "n_items": 5,
+          "n_accepted": 1,
+          "top_type": "capsicum"
+        },
+        "detector": {
+          "n_items": 5,
+          "n_accepted": 1,
+          "top_type": "capsicum"
+        }
+      },
+      "bitter_gourd_fresh_00.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "detector": {
+          "n_items": 3,
+          "n_accepted": 0,
+          "top_type": null
+        }
+      },
+      "bitter_gourd_fresh_02.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "tomato"
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "tomato"
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "tomato"
+        },
+        "detector": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "tomato"
+        }
+      },
+      "bitter_gourd_fresh_06.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "bitter_gourd"
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "bitter_gourd"
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "bitter_gourd"
+        },
+        "detector": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "bitter_gourd"
+        }
+      },
+      "bitter_gourd_fresh_09.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "bitter_gourd"
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "banana"
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "banana"
+        },
+        "detector": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "banana"
+        }
+      },
+      "bitter_gourd_fresh_10.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "bitter_gourd"
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "detector": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        }
+      },
+      "bitter_gourd_stale_04.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "bitter_gourd"
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "detector": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        }
+      },
+      "bitter_gourd_stale_06.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "bitter_gourd"
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "bitter_gourd"
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "bitter_gourd"
+        },
+        "detector": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "bitter_gourd"
+        }
+      },
+      "bitter_gourd_stale_08.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "bitter_gourd"
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "bitter_gourd"
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "bitter_gourd"
+        },
+        "detector": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "bitter_gourd"
+        }
+      },
+      "bitter_gourd_stale_11.jpg": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "bitter_gourd"
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "detector": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        }
+      },
+      "user_banana.png": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "banana"
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "banana"
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "banana"
+        },
+        "detector": {
+          "n_items": 2,
+          "n_accepted": 2,
+          "top_type": "banana"
+        }
+      },
+      "user_apple.png": {
+        "v2.0.1": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "whole": {
+          "n_items": 1,
+          "n_accepted": 0,
+          "top_type": null
+        },
+        "prototype": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "apple"
+        },
+        "detector": {
+          "n_items": 1,
+          "n_accepted": 1,
+          "top_type": "apple"
+        }
+      }
+    }
+  },
+  "coco": {
+    "n_images": 200,
+    "methods": {
+      "prototype": {
+        "ap": {
+          "AP": 0.12098404790690005,
+          "AP50": 0.22089317879625775,
+          "AP75": 0.11879651178617322,
+          "AP_small": 0.0016360066486112797,
+          "AP_medium": 0.05931999665462413,
+          "AP_large": 0.348881975524469,
+          "AR1": 0.07261538461538461,
+          "AR10": 0.18892307692307694,
+          "AR100": 0.25374358974358974,
+          "AR_small": 0.016487455197132617,
+          "AR_medium": 0.2180365296803653,
+          "AR_large": 0.5713178294573644
+        },
+        "medium_supported": {
+          "n": 391,
+          "found": 0.061381074168797956,
+          "found_and_type_correct": 0.043478260869565216
+        },
+        "large_supported": {
+          "n": 244,
+          "found": 0.5901639344262295,
+          "found_and_type_correct": 0.38934426229508196
+        }
+      },
+      "detector": {
+        "ap": {
+          "AP": 0.11239734636603611,
+          "AP50": 0.2071209239614517,
+          "AP75": 0.10605615071900738,
+          "AP_small": 0.00024218509933367953,
+          "AP_medium": 0.07342982890429527,
+          "AP_large": 0.32217158239839,
+          "AR1": 0.06317948717948718,
+          "AR10": 0.18728205128205125,
+          "AR100": 0.2675897435897436,
+          "AR_small": 0.039784946236559135,
+          "AR_medium": 0.22831050228310504,
+          "AR_large": 0.5810077519379846
+        },
+        "medium_supported": {
+          "n": 391,
+          "found": 0.11253196930946291,
+          "found_and_type_correct": 0.08184143222506395
+        },
+        "large_supported": {
+          "n": 244,
+          "found": 0.5573770491803278,
+          "found_and_type_correct": 0.38934426229508196
+        }
+      }
+    },
+    "note": "AP is a lower bound: produce without a COCO category (tomato, pepper...) is unlabelled",
+    "n_supported_boxes": {
+      "medium": 391,
+      "large": 244
+    },
+    "oracle_crops": {
+      "medium": {
+        "n": 391,
+        "type_correct": 0.6061381074168798
+      },
+      "large": {
+        "n": 244,
+        "type_correct": 0.639344262295082
+      }
+    },
+    "single_type_scenes": {
+      "n": 138,
+      "methods": {
+        "v2.0.1": {
+          "type_correct": 0.10869565217391304
+        },
+        "whole": {
+          "type_correct": 0.2246376811594203
+        },
+        "prototype": {
+          "type_correct": 0.41304347826086957
+        },
+        "detector": {
+          "type_correct": 0.463768115942029
+        }
+      }
+    }
+  },
+  "ood_test": {
+    "n": 1000,
+    "methods": {
+      "v2.0.1": {
+        "false_accept": 0.296
+      },
+      "whole": {
+        "false_accept": 0.311
+      },
+      "prototype": {
+        "false_accept": 0.311
+      },
+      "detector": {
+        "false_accept": 0.339
+      }
+    }
+  },
+  "cifar": {
+    "n": 2000,
+    "methods": {
+      "v2.0.1": {
+        "false_accept": 0.066
+      },
+      "whole": {
+        "false_accept": 0.041
+      },
+      "prototype": {
+        "false_accept": 0.041
+      },
+      "detector": {
+        "false_accept": 0.0355
+      }
+    }
+  }
+}

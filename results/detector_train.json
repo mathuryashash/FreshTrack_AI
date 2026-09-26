@@ -1,0 +1,115 @@
+{
+  "architecture": "ssdlite320_mobilenet_v3_large (torchvision, COCO-pretrained), 1 class: produce",
+  "input_size": 320,
+  "normalize_mean": [
+    0.5,
+    0.5,
+    0.5
+  ],
+  "normalize_std": [
+    0.5,
+    0.5,
+    0.5
+  ],
+  "score_threshold": 0.35,
+  "val_at_threshold": {
+    "f1": 0.8235035211267605,
+    "precision": 0.9003849855630414,
+    "recall": 0.7587185725871858
+  },
+  "nms_iou": 0.45,
+  "max_items": 8,
+  "crop_scale": 1.2,
+  "best_epoch": 3,
+  "val_ap": {
+    "AP": 0.6817246788719974,
+    "AP50": 0.8468142018281688,
+    "AP75": 0.762669261339589,
+    "AP_small": 0.04875342352954009,
+    "AP_medium": 0.5561610670536105,
+    "AP_large": 0.8021253824889637,
+    "AR1": 0.32694556905083216,
+    "AR10": 0.7481331533963113,
+    "AR100": 0.7677462887989204,
+    "AR_small": 0.12205882352941175,
+    "AR_medium": 0.6979797979797979,
+    "AR_large": 0.8516613924050633
+  },
+  "n_train": 23453,
+  "n_val": 2196,
+  "epochs": 10,
+  "lr": 0.0002,
+  "batch_size": 32,
+  "epochs_log": [
+    {
+      "epoch": 0.0,
+      "train_loss": 2.42,
+      "val_ap50": 0.8147,
+      "val_ap": 0.6306,
+      "seconds": 417.0
+    },
+    {
+      "epoch": 1.0,
+      "train_loss": 1.693,
+      "val_ap50": 0.8257,
+      "val_ap": 0.6569,
+      "seconds": 357.0
+    },
+    {
+      "epoch": 2.0,
+      "train_loss": 1.594,
+      "val_ap50": 0.8348,
+      "val_ap": 0.6735,
+      "seconds": 372.0
+    },
+    {
+      "epoch": 3.0,
+      "train_loss": 1.5296,
+      "val_ap50": 0.8468,
+      "val_ap": 0.6817,
+      "seconds": 366.0
+    },
+    {
+      "epoch": 4.0,
+      "train_loss": 1.4786,
+      "val_ap50": 0.834,
+      "val_ap": 0.6796,
+      "seconds": 351.0
+    },
+    {
+      "epoch": 5.0,
+      "train_loss": 1.4416,
+      "val_ap50": 0.8416,
+      "val_ap": 0.6871,
+      "seconds": 367.0
+    },
+    {
+      "epoch": 6.0,
+      "train_loss": 1.4022,
+      "val_ap50": 0.8402,
+      "val_ap": 0.6925,
+      "seconds": 350.0
+    },
+    {
+      "epoch": 7.0,
+      "train_loss": 1.3692,
+      "val_ap50": 0.8419,
+      "val_ap": 0.695,
+      "seconds": 351.0
+    },
+    {
+      "epoch": 8.0,
+      "train_loss": 1.3598,
+      "val_ap50": 0.8437,
+      "val_ap": 0.6976,
+      "seconds": 356.0
+    },
+    {
+      "epoch": 9.0,
+      "train_loss": 1.3487,
+      "val_ap50": 0.8449,
+      "val_ap": 0.6969,
+      "seconds": 357.0
+    }
+  ]
+}

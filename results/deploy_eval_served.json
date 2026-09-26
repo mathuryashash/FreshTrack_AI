@@ -1,0 +1,123 @@
+{
+  "web_dropped_as_near_duplicates": 1,
+  "models": {
+    "deploy_mnv3_v201": {
+      "threshold": 5.0,
+      "web": {
+        "n": 60,
+        "accept_rate": 0.5166666666666667,
+        "type_acc": 0.7666666666666667,
+        "accepted_and_type_correct": 0.45,
+        "freshness_acc": 0.8,
+        "n_freshness": 60
+      },
+      "user": {
+        "n": 1,
+        "accept_rate": 1.0,
+        "type_acc": 1.0,
+        "accepted_and_type_correct": 1.0
+      },
+      "fv_test": {
+        "n": 613,
+        "accept_rate": 0.9494290375203915,
+        "type_acc": 0.9804241435562806,
+        "accepted_and_type_correct": 0.9477977161500816,
+        "freshness_acc": 0.9690048939641109,
+        "n_freshness": 613
+      },
+      "veg_test": {
+        "n": 600,
+        "accept_rate": 0.995,
+        "type_acc": 0.9983333333333333,
+        "accepted_and_type_correct": 0.995
+      },
+      "main_test": {
+        "n": 1788,
+        "accept_rate": 0.9927293064876958,
+        "type_acc": 0.9988814317673378,
+        "accepted_and_type_correct": 0.9916107382550335,
+        "freshness_acc": 0.9837807606263982,
+        "n_freshness": 1788
+      },
+      "external": {
+        "n": 590,
+        "accept_rate": 0.735593220338983,
+        "type_acc": 0.864406779661017,
+        "accepted_and_type_correct": 0.6949152542372882
+      },
+      "ood_real": {
+        "n": 5393,
+        "accept_rate": 0.3063230113109586
+      },
+      "cifar": {
+        "n": 2000,
+        "accept_rate": 0.066
+      },
+      "coco_crops": {
+        "n": 574,
+        "accept_rate": 0.3588850174216028,
+        "type_acc": 0.5749128919860628,
+        "accepted_and_type_correct": 0.2874564459930314
+      }
+    },
+    "deploy_mnv3_v210": {
+      "threshold": 5.344115257263184,
+      "web": {
+        "n": 60,
+        "accept_rate": 0.5833333333333334,
+        "type_acc": 0.7666666666666667,
+        "accepted_and_type_correct": 0.5333333333333333,
+        "freshness_acc": 0.9166666666666666,
+        "n_freshness": 60
+      },
+      "user": {
+        "n": 1,
+        "accept_rate": 1.0,
+        "type_acc": 1.0,
+        "accepted_and_type_correct": 1.0
+      },
+      "fv_test": {
+        "n": 613,
+        "accept_rate": 0.9624796084828712,
+        "type_acc": 0.9804241435562806,
+        "accepted_and_type_correct": 0.9575856443719413,
+        "freshness_acc": 0.9690048939641109,
+        "n_freshness": 613
+      },
+      "veg_test": {
+        "n": 600,
+        "accept_rate": 0.9966666666666667,
+        "type_acc": 0.9983333333333333,
+        "accepted_and_type_correct": 0.9966666666666667
+      },
+      "main_test": {
+        "n": 1788,
+        "accept_rate": 0.9910514541387024,
+        "type_acc": 0.9994407158836689,
+        "accepted_and_type_correct": 0.9910514541387024,
+        "freshness_acc": 0.9804250559284117,
+        "n_freshness": 1788
+      },
+      "external": {
+        "n": 590,
+        "accept_rate": 0.8271186440677966,
+        "type_acc": 0.9186440677966101,
+        "accepted_and_type_correct": 0.7966101694915254
+      },
+      "ood_real": {
+        "n": 5393,
+        "accept_rate": 0.3168922677544966
+      },
+      "cifar": {
+        "n": 2000,
+        "accept_rate": 0.0405
+      },
+      "coco_crops": {
+        "n": 574,
+        "accept_rate": 0.6602787456445993,
+        "type_acc": 0.9128919860627178,
+        "accepted_and_type_correct": 0.6498257839721254
+      }
+    }
+  }
+}

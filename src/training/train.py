@@ -67,8 +67,10 @@ def train(
     seed=0,
     num_workers=DEFAULT_NUM_WORKERS,
     strong_aug=False,
+    init_from=None,
 ):
-    """Train one run into models/runs/<run_name>/ and return the best checkpoint path."""
+    """Train one run into models/runs/<run_name>/ and return the best checkpoint path.
+    init_from: a checkpoint to fine-tune from instead of ImageNet weights."""
     if not os.path.exists(metadata_path):
         raise FileNotFoundError(f"Metadata file not found at {metadata_path}")
 
@@ -86,6 +88,7 @@ def train(
         "learning_rate": learning_rate,
         "seed": seed,
         "strong_aug": strong_aug,
+        "init_from": str(init_from) if init_from else None,
         "metadata": str(metadata_path),
         "metadata_sha256": _sha256(metadata_path),
         "git_sha": _git_sha(),
@@ -103,6 +106,8 @@ def train(
         learning_rate=learning_rate,
         max_epochs=epochs,
     )
+    if init_from:
+        model.load_state_dict(torch.load(init_from, map_location="cpu", weights_only=True)["state_dict"])
 
     checkpoint = ModelCheckpoint(
         dirpath=run_dir, filename="best", monitor="val_loss", mode="min", save_top_k=1
@@ -147,6 +152,7 @@ if __name__ == "__main__":
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--num_workers", type=int, default=DEFAULT_NUM_WORKERS)
     parser.add_argument("--strong_aug", action="store_true", help="real-photo augmentation (deployment model)")
+    parser.add_argument("--init_from", default=None, help="checkpoint to fine-tune from")
     args = parser.parse_args()
 
     train(
@@ -161,4 +167,5 @@ if __name__ == "__main__":
         seed=args.seed,
         num_workers=args.num_workers,
         strong_aug=args.strong_aug,
+        init_from=args.init_from,
     )

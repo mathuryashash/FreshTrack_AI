@@ -88,6 +88,102 @@ Rollback: copy `models/runs/mnv3_mtl_s1/{best.ckpt,model_meta.json}` to
 `models/checkpoints/` (as `freshtrack_v2.ckpt`, `model_meta.json`) and re-export.
 The user banana scores 8.84 and passes at every threshold above.
 
+### 0.2 Two-stage scan: detect, crop, classify (2026-09-26, app v2.1.0)
+
+**Problem.** After v2.0.1 a user photo of one apple held in a hand over a floor was
+still rejected: whole-photo energy 3.54 (gate 5.0), and the fresh apple was called
+"Stale 100%". A square crop around the apple gave energy 7.87, apple 100%, fresh 99%.
+The classifier learned photos in which one item fills the frame. Two more findings:
+- A COCO-pretrained detector limited to banana/apple/orange, followed by the same
+  classifier on crops (no training), already raised web photos with the right type
+  from 45% to 65%.
+- On crops around the human boxes of bananas, apples and oranges in COCO val2017
+  (574 crops, `results/deploy_eval_served.json`, `coco_crops`), the v2.0.1 classifier
+  named the type right 57.5% of the time and passed its gate with the right type
+  28.7% of the time: the classifier also had to learn real-scene crops.
+
+**Pipeline** (`src/detection/detector.py`; the app reimplements it in
+`mobile_app/lib/services/pipeline.dart`, checked against Python fixtures in unit tests
+and on the emulator):
+1. Detector: torchvision SSDlite320-MobileNetV3-Large (BSD-3-Clause), COCO-pretrained,
+   head replaced by one class "produce" (initialised from COCO's background and produce
+   weights). 8.9 MB ONNX. Up to 8 boxes; score threshold 0.35 = best F1 at IoU 0.5 on
+   validation (P 0.90, R 0.76); NMS 0.45.
+2. Each box is cropped square at 1.2x its longer side (clipped, at least 1 px) and
+   classified. No box: the whole photo is classified (the v2.0 behaviour).
+3. "Select area": a box the user draws is cropped and gated like a detection.
+4. Each recognised item is one history row whose picture is its crop.
+
+**Detector data** (`src/detection/data.py`; one class, so unsupported produce is found
+and left to the gate): 3,000 COCO train2017 scenes with human boxes (banana, apple,
+orange, broccoli, carrot) plus Grounding DINO boxes (score >= 0.45) for produce COCO has
+no category for; 3,000 food-free COCO scenes as negatives and backgrounds; Kaggle
+training/validation photos auto-labelled by Grounding DINO prompted with their known type
+(visual check of 20: 17 fully right, 3 partly); 12,000 + 1,000 synthetic scenes of 1-6
+SAM cutouts pasted on COCO backgrounds (4,715 of 6,341 cutouts pass a shape filter that,
+on 24 hand-checked cutouts, removed 6 of 7 faulty and no good one). Train 23,453 /
+val 2,196 images. COCO val2017, the web photos and the classifier's test splits
+(supported and OOD) are never used. Val AP50 0.847 (1,000-image subset, epoch 3 of 10).
+
+**Classifier v2.1** (`deploy_mnv3_v210`): fine-tuned from `deploy_mnv3_v201` (8 epochs,
+lr 1e-4) on the v2.0.1 data plus 12,600 crops cut the way the app cuts them: 6,000 from
+COCO train human boxes (type only) and 6,600 from the synthetic scenes (6 types;
+freshness where the source photo has it).
+
+**Gates, all chosen on validation data** (unsupported produce, OOD val half):
+- Whole photo 5.344: v2.1 accepts 28.9% of 3,000 photos, as v2.0.1 did at 5.0
+  (`python -m src.training.gate_sweep ... --match ...`).
+- Crops score higher than whole photos (on 1,000 photos the detector never trained on,
+  at 5.344 its crops accepted 31.0% of photos vs 28.3% for whole photos), so crops get
+  their own gate, 5.503, at which the per-photo false-accept rate equals the whole
+  photo's (prototype: 5.800).
+
+**Results** (`results/deploy_eval_served.json`, `results/detection_eval.json`):
+
+| Classifier at its served gate | v2.0.1 (5.0) | v2.1 (5.344) |
+|---|---|---|
+| COCO val crops (574): accepted, right type | 28.7% | 65.0% |
+| Web photos, whole (60): accepted, right type | 45.0% | 53.3% |
+| Kaggle fruit-recognition set (590) | 69.5% | 79.7% |
+| fv / veg / original test splits | 94.8 / 99.5 / 99.2% | 95.8 / 99.7 / 99.1% |
+| Unsupported produce (5,393) / CIFAR (2,000) accepted | 30.6 / 6.6% | 31.7 / 4.1% |
+
+| Whole app | v2.0.1 app | whole, v2.1 | prototype + v2.1 | detector + v2.1 |
+|---|---|---|---|---|
+| Web + user photos (62): right type | 45.2% | 53.2% | 67.7% | 72.6% |
+| COCO single-type scenes (138): right type | 10.9% | 22.5% | 41.3% | 46.4% |
+| COCO large / medium fruit: found and right | - | - | 38.9 / 4.3% | 38.9 / 8.2% |
+| Unsupported produce, test (1,000): any item accepted | 29.6% | 31.1% | 31.1% | 33.9% |
+| CIFAR-10 (2,000): any item accepted | 6.6% | 4.1% | 4.1% | 3.6% |
+
+COCO AP50 (class-agnostic, all produce) is 0.207 for the detector and 0.221 for the
+prototype; it is a lower bound, since tomatoes, peppers and lemons in COCO scenes are
+unlabelled. On the Android 15 emulator (profile build) the app matches Python on all
+14 fixture items (count, type and gate; boxes within 0.8 px) and the classifier matches
+PyTorch on type and gate for all 40 parity photos; median decode 224 ms, detection 46 ms,
+all crops 92 ms (`results/mobile_detector_metrics.json`, `results/mobile_parity_v210.json`;
+emulator timings vary between runs).
+
+**Limits.** SSDlite at 320 px finds few small items in dense scenes (COCO medium: 11%).
+Unsupported-produce false accepts were matched on validation (28.3%) but reach 33.9% on
+the test half. The v2.0.1 web numbers use a gate chosen while looking at those photos
+(0.1); every v2.1 threshold was chosen on validation data. Latency is from an emulator.
+
+**Review fixes before release.** Flutter review: zero-size crop crash at an image edge
+(now >= 1 px, tested in Python and Dart); overlapping-scan loading race (scan token);
+one isolate hop for all history crops; a rejected whole-photo guess replaced by the
+user's box. ML review: the classifier's OOD test split had reached detector validation
+(excluded); one-to-one box matching for COCO recall; the crop gate above; COCO AP
+reported as a lower bound. Second ML review: 74 of the 1,000 crop-gate calibration photos
+were detector training photos; calibration now excludes them (gate 5.513 -> 5.503).
+Paper agent: the first on-device classifier check had run a cached v2.0.1 model.
+flutter_onnxruntime copies model assets to the temp dir and reuses any file with the same
+name, so phones upgrading from v2.0.1 would have kept the old classifier. The export
+scripts now name model files by content hash and the app deletes cached copies of older
+models; checked on the emulator by installing over a build whose old model was cached.
+Rollback: serve `deploy_mnv3_v201` with gate 5.0 and remove
+`detector.onnx` (the app then needs the v2.0.1 code).
+
 ---
 
 ## 1. Model Architecture Decisions

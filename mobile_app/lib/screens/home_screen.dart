@@ -2,10 +2,12 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-import '../models/prediction_result.dart';
+import 'package:path_provider/path_provider.dart';
 import '../services/classifier.dart';
 import '../services/database_service.dart';
+import '../services/pipeline.dart';
 import '../widgets/result_card.dart';
+import '../widgets/scan_view.dart';
 import 'result_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -22,10 +24,12 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
   final _picker = ImagePicker();
 
   File? _image;
-  PredictionResult? _result;
+  Analysis? _analysis;
+  List<ScanItem> _items = const []; // detections, plus boxes the user draws
   bool _loading = false;
+  bool _selecting = false; // drawing a box by hand
   String? _error;
-  bool _showOodPopup = false; // For OOD (Object Not Recognized) fun pop-up
+  int _gen = 0; // bumped per scan and on Clear; results of an older scan are dropped
 
   Future<void> _pick(ImageSource source) async {
     // Warm the model while the picker is open; errors resurface in _analyze.
@@ -50,40 +54,100 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
     }
     if (picked == null || !mounted) return;
     final file = File(picked.path);
-    setState(() {
-      _image = file;
-      _result = null;
-      _error = null;
-    });
+    setState(() => _image = file);
     await _analyze(file);
   }
 
   Future<void> _analyze(File file) async {
-    setState(() { _loading = true; _error = null; _showOodPopup = false; });
+    final gen = ++_gen;
+    setState(() {
+      _loading = true;
+      _error = null;
+      _analysis = null;
+      _items = const [];
+      _selecting = false;
+    });
     try {
-      final scan = await Classifier.instance.classify(file.path);
-      if (!mounted) return;
-
-      if (!scan.classification.isProduce) {
-        setState(() { _loading = false; _showOodPopup = true; });
-        return;
-      }
-
-      final result = scan.classification.toResult(imagePath: file.path);
-      await DatabaseService.insert(result);
-      if (mounted) setState(() { _result = result; });
+      final a = await Classifier.instance.analyse(file.path);
+      if (!mounted || gen != _gen) return;
+      // Show results first; saving the crops to history can follow.
+      setState(() {
+        _analysis = a;
+        _items = a.items;
+        _loading = false;
+      });
+      await _save(file.path, a.accepted);
     } catch (e) {
-      if (mounted) setState(() { _error = describeScanError(e); });
+      if (mounted && gen == _gen) setState(() => _error = describeScanError(e));
     } finally {
-      if (mounted) setState(() { _loading = false; });
+      if (mounted && gen == _gen && _loading) setState(() => _loading = false);
     }
   }
 
-  void _reset() => setState(() { _image = null; _result = null; _error = null; _showOodPopup = false; });
+  /// One history row per recognised item, with the item's crop as its picture.
+  Future<void> _save(String imagePath, List<ScanItem> items) async {
+    if (items.isEmpty) return;
+    final dir = (await getTemporaryDirectory()).path;
+    final ts = DateTime.now().microsecondsSinceEpoch;
+    final thumbs = await Classifier.instance.saveCrops(imagePath, items, dir, 'crop_$ts');
+    for (var k = 0; k < items.length; k++) {
+      await DatabaseService.insert(items[k].classification.toResult(imagePath: thumbs[k], id: '${ts}_$k'));
+    }
+  }
+
+  Future<void> _onSelected(Detection box) async {
+    final file = _image;
+    if (file == null) return;
+    final gen = _gen;
+    setState(() {
+      _selecting = false;
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final item = await Classifier.instance.classifyRegion(file.path, box);
+      if (!mounted || gen != _gen) return;
+      setState(() {
+        // A rejected whole-photo guess is superseded by the user's own box.
+        _items = [for (final i in _items) if (i.box != null || i.classification.isProduce) i, item];
+        _loading = false;
+      });
+      if (!item.classification.isProduce) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("Couldn't recognise that area. Try a tighter box around one item."),
+        ));
+      } else {
+        await _save(file.path, [item]);
+      }
+    } catch (e) {
+      if (mounted && gen == _gen) setState(() => _error = describeScanError(e));
+    } finally {
+      if (mounted && gen == _gen && _loading) setState(() => _loading = false);
+    }
+  }
+
+  void _open(ScanItem item) => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => ResultScreen(result: item.classification.toResult())),
+      );
+
+  void _startSelecting() => setState(() => _selecting = true);
+
+  void _reset() => setState(() {
+        _gen++;
+        _image = null;
+        _analysis = null;
+        _items = const [];
+        _error = null;
+        _selecting = false;
+      });
 
   @override
   Widget build(BuildContext context) {
     super.build(context);
+    final a = _analysis;
+    final accepted = [for (final i in _items) if (i.classification.isProduce) i];
+    final rejected = _items.length - accepted.length;
     return Scaffold(
       appBar: AppBar(
         title: Row(
@@ -107,36 +171,82 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
       ),
       body: SafeArea(
         child: SingleChildScrollView(
+          // While drawing a box, drags belong to the photo, not the page.
+          physics: _selecting ? const NeverScrollableScrollPhysics() : null,
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _ImageArea(
-                image: _image,
-                loading: _loading,
-                onReset: _reset,
-              ),
+              if (_selecting) _SelectBanner(onCancel: () => setState(() => _selecting = false)),
+              if (a != null && _image != null)
+                _AnalysedImage(
+                  image: _image!,
+                  analysis: a,
+                  items: _items,
+                  selecting: _selecting,
+                  loading: _loading,
+                  onReset: _reset,
+                  onTapItem: (k) {
+                    final c = _items[k].classification;
+                    if (c.isProduce) return _open(_items[k]);
+                    final guess = c.toResult().produceLabel ?? 'unknown';
+                    ScaffoldMessenger.of(context)
+                      ..hideCurrentSnackBar()
+                      ..showSnackBar(SnackBar(
+                        content: Text('Not recognised. Closest match: $guess, but not confident enough. '
+                            'Try "Select area" with a tighter box, or a closer photo.'),
+                      ));
+                  },
+                  onSelected: _onSelected,
+                )
+              else
+                _ImageArea(
+                  image: _image,
+                  loading: _loading,
+                  onReset: _reset,
+                ),
               const SizedBox(height: 20),
               _ActionRow(
                 onCamera: () => _pick(ImageSource.camera),
                 onGallery: () => _pick(ImageSource.gallery),
-                enabled: !_loading,
+                enabled: !_loading && !_selecting,
               ),
               const SizedBox(height: 28),
-              if (_showOodPopup)
-                Center(
-                  child: _OodPopup(onRetry: _reset),
-                ),
-              if (_loading) const _LoadingState(),
-              if (_error != null && !_showOodPopup) _ErrorCard(message: _error!),
-              if (_result != null && !_loading && !_showOodPopup)
-                GestureDetector(
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => ResultScreen(result: _result!)),
+              if (_loading && a == null) const _LoadingState(),
+              if (_error != null) _ErrorCard(message: _error!),
+              if (a != null && !_selecting) ...[
+                if (accepted.isEmpty)
+                  Center(child: _OodPopup(onRetry: _reset, onSelect: _startSelecting))
+                else ...[
+                  _ResultsHeader(
+                    count: accepted.length,
+                    wholePhoto: !a.detected && _items.every((i) => !i.manual),
+                    onSelect: _loading ? null : _startSelecting,
+                    onClear: _reset,
                   ),
-                  child: ResultCard(result: _result!),
-                ),
+                  const SizedBox(height: 12),
+                  if (accepted.length == 1)
+                    GestureDetector(
+                      onTap: () => _open(accepted.first),
+                      child: ResultCard(result: accepted.first.classification.toResult()),
+                    )
+                  else
+                    for (final (k, item) in accepted.indexed)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: ItemTile(number: k + 1, item: item, onTap: () => _open(item)),
+                      ),
+                  if (rejected > 0)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Text(
+                        '$rejected more ${rejected == 1 ? 'thing was' : 'things were'} not recognised '
+                        '(grey boxes). Use "Select area" to try one again.',
+                        style: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 12.5),
+                      ),
+                    ),
+                ],
+              ],
             ],
           ),
         ),
@@ -146,6 +256,116 @@ class _HomeScreenState extends State<HomeScreen> with AutomaticKeepAliveClientMi
 }
 
 // ── Sub-widgets ───────────────────────────────────────────────────────────────
+
+/// The analysed photo with its boxes; replaces the plain preview after a scan.
+class _AnalysedImage extends StatelessWidget {
+  final File image;
+  final Analysis analysis;
+  final List<ScanItem> items;
+  final bool selecting, loading;
+  final VoidCallback onReset;
+  final ValueChanged<int> onTapItem;
+  final ValueChanged<Detection> onSelected;
+
+  const _AnalysedImage({
+    required this.image,
+    required this.analysis,
+    required this.items,
+    required this.selecting,
+    required this.loading,
+    required this.onReset,
+    required this.onTapItem,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: const Color(0xFF131929),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: selecting ? Colors.white70 : const Color(0xFF00E676).withValues(alpha: 0.4),
+          width: 1.5,
+        ),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Stack(children: [
+        ScanImage(
+          image: image,
+          imageWidth: analysis.width,
+          imageHeight: analysis.height,
+          items: items,
+          selecting: selecting && !loading,
+          onTapItem: onTapItem,
+          onSelected: onSelected,
+        ),
+        if (loading)
+          const Positioned.fill(
+            child: ColoredBox(
+              color: Colors.black54,
+              child: Center(child: SpinKitRipple(color: Color(0xFF00E676), size: 60)),
+            ),
+          ),
+      ]),
+    );
+  }
+}
+
+class _ResultsHeader extends StatelessWidget {
+  final int count;
+  final bool wholePhoto;
+  final VoidCallback? onSelect;
+  final VoidCallback onClear;
+  const _ResultsHeader({required this.count, required this.wholePhoto, required this.onSelect, required this.onClear});
+
+  @override
+  Widget build(BuildContext context) {
+    final title = wholePhoto ? 'Whole photo' : (count == 1 ? '1 item found' : '$count items found');
+    return Row(children: [
+      Expanded(
+        child: Text(title, style: const TextStyle(color: Colors.white, fontSize: 17, fontWeight: FontWeight.w700)),
+      ),
+      TextButton.icon(
+        onPressed: onSelect,
+        icon: const Icon(Icons.crop_free, size: 18),
+        label: const Text('Select area'),
+      ),
+      IconButton(
+        onPressed: onClear,
+        tooltip: 'Clear',
+        icon: const Icon(Icons.close, color: Colors.white54),
+      ),
+    ]);
+  }
+}
+
+class _SelectBanner extends StatelessWidget {
+  final VoidCallback onCancel;
+  const _SelectBanner({required this.onCancel});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.fromLTRB(14, 6, 6, 6),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1C2333),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white24),
+      ),
+      child: Row(children: [
+        const Icon(Icons.crop_free, color: Colors.white70, size: 20),
+        const SizedBox(width: 10),
+        const Expanded(
+          child: Text('Drag a box around one fruit or vegetable',
+              style: TextStyle(color: Colors.white, fontSize: 14)),
+        ),
+        TextButton(onPressed: onCancel, child: const Text('Cancel')),
+      ]),
+    );
+  }
+}
 
 class _ImageArea extends StatelessWidget {
   final File? image;
@@ -309,7 +529,11 @@ class _SecondaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return Semantics(
+      button: true,
+      enabled: onTap != null,
+      label: 'Choose a photo from the gallery',
+      child: GestureDetector(
       onTap: onTap,
       child: AnimatedOpacity(
         opacity: onTap != null ? 1.0 : 0.4,
@@ -323,6 +547,7 @@ class _SecondaryButton extends StatelessWidget {
           ),
           child: Icon(icon, color: Colors.white70, size: 22),
         ),
+      ),
       ),
     );
   }
@@ -373,8 +598,8 @@ class _ErrorCard extends StatelessWidget {
 
 // Fun OOD (Object Not Recognized) Pop-up Widget
 class _OodPopup extends StatefulWidget {
-  final VoidCallback onRetry;
-  const _OodPopup({required this.onRetry});
+  final VoidCallback onRetry, onSelect;
+  const _OodPopup({required this.onRetry, required this.onSelect});
 
   @override
   State<_OodPopup> createState() => _OodPopupState();
@@ -468,7 +693,7 @@ class _OodPopupState extends State<_OodPopup> with SingleTickerProviderStateMixi
             ),
             const SizedBox(height: 8),
             const Text(
-              "Try a closer photo of one fruit or vegetable,\nfilling most of the frame.\n"
+              "Draw a box around the fruit or vegetable,\nor try a closer photo of it.\n"
               "Supported: apple, banana, bitter gourd,\ncapsicum, orange, tomato.",
               style: TextStyle(
                 color: Colors.white70,
@@ -477,6 +702,20 @@ class _OodPopupState extends State<_OodPopup> with SingleTickerProviderStateMixi
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: widget.onSelect,
+              icon: const Icon(Icons.crop_free, color: Color(0xFF4A148C)),
+              label: const Text(
+                'Select the fruit',
+                style: TextStyle(color: Color(0xFF4A148C), fontWeight: FontWeight.bold),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+              ),
+            ),
+            const SizedBox(height: 10),
             // Retry button
             ElevatedButton.icon(
               onPressed: widget.onRetry,

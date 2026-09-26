@@ -52,12 +52,53 @@ class ModelMeta {
 /// Matches the Python reference: decode to RGB, apply EXIF orientation, squash
 /// (no crop) to size x size with cv2.INTER_LINEAR, /255, (x - mean) / std.
 Float32List preprocess(Uint8List encoded, int size, List<double> mean, List<double> std) {
+  final im = decodeRgb(encoded);
+  return toTensor(im.rgb, im.width, im.height, size, mean, std);
+}
+
+/// Packed 8-bit RGB pixels, row-major.
+class RgbImage {
+  final Uint8List rgb;
+  final int width, height;
+  const RgbImage(this.rgb, this.width, this.height);
+}
+
+/// Decode to RGB and apply EXIF orientation, so pixel coordinates match what
+/// Image.file shows on screen.
+RgbImage decodeRgb(Uint8List encoded) {
   var im = img.decodeImage(encoded);
   if (im == null) throw const FormatException('Unsupported or corrupt image');
   if (im.exif.imageIfd.hasOrientation && im.exif.imageIfd.orientation != 1) {
     im = img.bakeOrientation(im);
   }
-  return toTensor(_rgbBytes(im), im.width, im.height, size, mean, std);
+  return RgbImage(_rgbBytes(im), im.width, im.height);
+}
+
+/// Pixels [x1, x2) x [y1, y2) of an image, like numpy rgb[y1:y2, x1:x2].
+RgbImage cropRgb(RgbImage im, int x1, int y1, int x2, int y2) {
+  final w = x2 - x1, h = y2 - y1;
+  final out = Uint8List(w * h * 3);
+  for (var y = 0; y < h; y++) {
+    final src = ((y1 + y) * im.width + x1) * 3;
+    out.setRange(y * w * 3, (y + 1) * w * 3, im.rgb, src);
+  }
+  return RgbImage(out, w, h);
+}
+
+/// Classifier input for a crop: cropRgb then toTensor.
+Float32List cropTensor(RgbImage im, int x1, int y1, int x2, int y2, int size, List<double> mean, List<double> std) {
+  final c = cropRgb(im, x1, y1, x2, y2);
+  return toTensor(c.rgb, c.width, c.height, size, mean, std);
+}
+
+/// JPEG of a crop, at most 480 px on the long side (history thumbnails).
+Uint8List encodeCropJpeg(RgbImage im, int x1, int y1, int x2, int y2) {
+  final c = cropRgb(im, x1, y1, x2, y2);
+  var out = img.Image.fromBytes(width: c.width, height: c.height, bytes: c.rgb.buffer, numChannels: 3);
+  if (math.max(c.width, c.height) > 480) {
+    out = c.width >= c.height ? img.copyResize(out, width: 480) : img.copyResize(out, height: 480);
+  }
+  return img.encodeJpg(out, quality: 88);
 }
 
 /// Packed 8-bit RGB. Alpha is dropped (not composited), like cv2.imread.
@@ -213,7 +254,8 @@ class Classification {
     required this.shelfLifeDays,
   });
 
-  PredictionResult toResult({String? imagePath}) => PredictionResult(
+  PredictionResult toResult({String? imagePath, String? id}) => PredictionResult(
+        id: id,
         freshness: freshness,
         freshnessConfidence: freshnessConfidence,
         produceType: produceType,
@@ -224,15 +266,17 @@ class Classification {
       );
 }
 
-/// Logits -> labels, same rules as src/api/main.py /predict.
-Classification postprocess(ModelMeta meta, List<double> freshnessLogits, List<double> typeLogits) {
+/// Logits -> labels, same rules as src/api/main.py /predict. [gate] overrides the
+/// whole-photo energy threshold (crops use DetectorMeta.cropOodThreshold).
+Classification postprocess(ModelMeta meta, List<double> freshnessLogits, List<double> typeLogits,
+    {double? gate}) {
   final fp = softmax(freshnessLogits), tp = softmax(typeLogits);
   final fi = argmax(fp), ti = argmax(tp);
   final pFresh = fp[0]; // index 0 == "Fresh"
   final type = meta.produceTypes[ti];
   final e = energy(typeLogits);
   return Classification(
-    isProduce: e >= meta.oodThreshold,
+    isProduce: e >= (gate ?? meta.oodThreshold),
     energy: e,
     freshness: meta.freshnessLabels[fi],
     freshnessConfidence: fp[fi],
@@ -241,5 +285,83 @@ Classification postprocess(ModelMeta meta, List<double> freshnessLogits, List<do
     produceConfidence: tp[ti],
     quality: qualityFromPFresh(meta, pFresh),
     shelfLifeDays: shelfLifeDays(meta, type, pFresh),
+  );
+}
+
+// ── Produce detector (src/detection/detector.py) ────────────────────────────
+
+/// assets/model/detector_meta.json, written by src/detection/export.py.
+class DetectorMeta {
+  final String onnxFile, inputName;
+  final List<String> outputNames; // [boxes [1,A,4] xyxy in 0..1, scores [1,A]]
+  final int inputSize, maxItems;
+  final List<double> mean, std;
+  final double scoreThreshold, nmsIou, cropScale;
+
+  /// Energy gate for crops. A crop scores higher than the whole photo it came
+  /// from, so crops get their own gate (calibrated in src/detection/evaluate.py);
+  /// the whole-photo fallback keeps [ModelMeta.oodThreshold].
+  final double cropOodThreshold;
+
+  DetectorMeta.fromJson(Map<String, dynamic> j)
+      : onnxFile = j['onnx_file'] as String,
+        inputName = j['input_name'] as String,
+        outputNames = List<String>.from(j['output_names'] as List),
+        inputSize = j['input_size'] as int,
+        maxItems = j['max_items'] as int,
+        mean = ModelMeta._doubles(j['normalize_mean']),
+        std = ModelMeta._doubles(j['normalize_std']),
+        scoreThreshold = (j['score_threshold'] as num).toDouble(),
+        nmsIou = (j['nms_iou'] as num).toDouble(),
+        cropScale = (j['crop_scale'] as num).toDouble(),
+        cropOodThreshold = (j['crop_ood_threshold'] as num).toDouble();
+}
+
+/// A produce box in pixel coordinates of the decoded (EXIF-rotated) photo.
+class Detection {
+  final double x1, y1, x2, y2, score;
+  const Detection(this.x1, this.y1, this.x2, this.y2, this.score);
+}
+
+double _iou(List<double> b, int i, int j) {
+  final ix = math.max(0.0, math.min(b[4 * i + 2], b[4 * j + 2]) - math.max(b[4 * i], b[4 * j]));
+  final iy = math.max(0.0, math.min(b[4 * i + 3], b[4 * j + 3]) - math.max(b[4 * i + 1], b[4 * j + 1]));
+  final inter = ix * iy;
+  final ai = (b[4 * i + 2] - b[4 * i]) * (b[4 * i + 3] - b[4 * i + 1]);
+  final aj = (b[4 * j + 2] - b[4 * j]) * (b[4 * j + 3] - b[4 * j + 1]);
+  return inter / (ai + aj - inter);
+}
+
+/// Score threshold, greedy NMS (torchvision.ops.nms), best [DetectorMeta.maxItems];
+/// boxes (normalised, 4 per anchor) scaled to a w x h photo. Same as select().
+List<Detection> selectDetections(List<double> boxes, List<double> scores, DetectorMeta meta, int w, int h) {
+  final order = [
+    for (var i = 0; i < scores.length; i++)
+      if (scores[i] >= meta.scoreThreshold) i,
+  ]..sort((a, b) => scores[b].compareTo(scores[a]));
+  final kept = <int>[];
+  for (final i in order) {
+    if (kept.length == meta.maxItems) break;
+    if (kept.every((k) => _iou(boxes, i, k) <= meta.nmsIou)) kept.add(i);
+  }
+  return [
+    for (final i in kept)
+      Detection(boxes[4 * i] * w, boxes[4 * i + 1] * h, boxes[4 * i + 2] * w, boxes[4 * i + 3] * h, scores[i]),
+  ];
+}
+
+/// Square crop around a box (side = scale x longer side), clipped to the photo:
+/// integer bounds (x1, y1, x2, y2), end-exclusive. Same as crop_box().
+(int, int, int, int) cropBounds(Detection d, int w, int h, double scale) {
+  final cx = (d.x1 + d.x2) / 2, cy = (d.y1 + d.y2) / 2;
+  final half = math.max(d.x2 - d.x1, d.y2 - d.y1) * scale / 2;
+  // A degenerate box on the far edge would clip to zero width: keep at least one pixel.
+  final x1 = math.min(math.max(0, (cx - half).floor()), w - 1);
+  final y1 = math.min(math.max(0, (cy - half).floor()), h - 1);
+  return (
+    x1,
+    y1,
+    math.max(math.min(w, (cx + half).ceil()), x1 + 1),
+    math.max(math.min(h, (cy + half).ceil()), y1 + 1),
   );
 }

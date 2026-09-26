@@ -1,0 +1,27 @@
+{
+  "architecture": "ssdlite320_mobilenet_v3_large (torchvision, COCO-pretrained), 1 class: produce",
+  "input_size": 320,
+  "normalize_mean": [
+    0.5,
+    0.5,
+    0.5
+  ],
+  "normalize_std": [
+    0.5,
+    0.5,
+    0.5
+  ],
+  "score_threshold": 0.35,
+  "nms_iou": 0.45,
+  "max_items": 8,
+  "crop_scale": 1.2,
+  "crop_ood_threshold": 5.503493309020996,
+  "onnx_file": "detector-5d0948ee5e57.onnx",
+  "input_name": "input",
+  "output_names": [
+    "boxes",
+    "scores"
+  ],
+  "input_layout": "NCHW float32, RGB, resize to input_size x input_size (bilinear), scale to [0,1], then (x - mean) / std",
+  "num_anchors": 3234
+}

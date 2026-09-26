@@ -58,14 +58,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
               } else {
                 version = meta.version;
               }
-              return _Tile(
-                icon: Icons.memory,
-                title: version,
-                subtitle: meta == null
-                    ? 'On-device ONNX Runtime'
-                    : 'On-device ONNX Runtime, fp32, ${meta.imageSize}x${meta.imageSize} input'
-                        '${Classifier.instance.loadMs == null ? '' : ', loaded in ${Classifier.instance.loadMs!.round()} ms'}',
-              );
+              final det = Classifier.instance.detectorMeta;
+              return Column(children: [
+                _Tile(
+                  icon: Icons.memory,
+                  title: version,
+                  subtitle: meta == null
+                      ? 'On-device ONNX Runtime'
+                      : 'Classifier: on-device ONNX Runtime, fp32, ${meta.imageSize}x${meta.imageSize} input'
+                          '${Classifier.instance.loadMs == null ? '' : ', both models loaded in ${Classifier.instance.loadMs!.round()} ms'}',
+                ),
+                if (det != null)
+                  _Tile(
+                    icon: Icons.center_focus_strong,
+                    title: 'Finds up to ${det.maxItems} items per photo',
+                    subtitle: 'Detector: SSDlite MobileNetV3, ${det.inputSize}x${det.inputSize} input; '
+                        'each item is cropped and checked separately.',
+                  ),
+              ]);
             },
           ),
           const _Tile(

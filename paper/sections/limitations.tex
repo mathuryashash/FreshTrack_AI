@@ -7,9 +7,21 @@ images of a produce type came from different devices or apps, freshness and
 acquisition source are confounded. We can expose that confound, but removing it
 needs new data. The freshness labels are the dataset authors' binary folder
 labels, with no inter-rater agreement and no intermediate ripeness stages. Most
-images show a single item on a plain background, and the low cross-dataset
-accuracy suggests that cluttered market photos will be harder still; we did not
-collect any field images. CIFAR-10 images are small and upsampled, which makes
-them an easy far-OOD test. Our latency figures come from a laptop CPU and an
-Android emulator rather than a range of real phones. Finally, the quality grade
-and shelf life shown to users are unvalidated heuristics.
+images show a single item on a plain background. Section~\ref{sec:phone}
+measures what this costs on web and COCO photos, but we did not collect field
+images in markets. CIFAR-10 images are small and upsampled, which makes them an
+easy far-OOD test. Our latency figures, including those of the two-stage scan,
+come from a laptop CPU and an Android emulator rather than a range of real
+phones. Finally, the quality grade and shelf life shown to users are
+unvalidated heuristics.
+
+The phone-photo tests are small or only partly labelled. The web set has
+\WebN{} photos plus two of our own, and we chose the v2.0.1 gate while looking
+at them, so its web results are optimistic. The v2.1 gates were set on
+validation data, but the false-accept rate they match is the one v2.0.1 reached
+at that gate. The detector's COCO AP is a lower bound, because produce that
+COCO does not annotate, such as tomatoes and peppers, counts against it. At
+\DetInput{} pixels SSDlite misses small items in crowded scenes and finds only
+\ScanMedFound\% of the medium COCO fruit. False accepts on unsupported produce
+were matched at \CalWhole\% on validation but reach \ScanOodDet\% on the test
+half.

@@ -12,6 +12,7 @@ MobileNetV3 on real images, so it is not used.
     python -m src.training.export_onnx
 """
 
+import hashlib
 import json
 import shutil
 from pathlib import Path
@@ -47,6 +48,20 @@ class _TwoHeads(torch.nn.Module):
         return out["freshness"], out["produce_type"]
 
 
+def content_named(path, stem):
+    """Rename an exported model to <stem>-<sha256[:12]>.onnx and delete older copies.
+    flutter_onnxruntime caches assets in the temp dir by file name and reuses any
+    existing file, so a new model under an unchanged name would keep the old one
+    running on phones that had the app before."""
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()[:12]
+    final = path.with_name(f"{stem}-{digest}.onnx")
+    for old in path.parent.glob(f"{stem}*.onnx"):
+        if old not in (path, final):
+            old.unlink()
+    path.replace(final)
+    return final
+
+
 def _load_rgb(path):
     return cv2.cvtColor(cv2.imread(str(path)), cv2.COLOR_BGR2RGB)
 
@@ -70,6 +85,7 @@ def main():
         opset_version=17,
         dynamo=False,
     )
+    onnx_path = content_named(onnx_path, "freshtrack")
 
     meta = json.loads(META.read_text())
     meta.update(

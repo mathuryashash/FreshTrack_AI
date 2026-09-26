@@ -2,9 +2,10 @@
 
 Every number in paper/freshtrack_ieee.tex comes from here, which reads only
 results/summary.json, results/baseline.json, models/runs/*/metrics.json and the
-metadata files. Run after src.training.run_experiment:
+metadata files, plus, for the phone-photo section, the deployment results listed
+in realworld(). Run after src.training.run_experiment:
 
-    python paper/make_tables.py   # -> paper/generated/{numbers,tables}.tex, paper/figures/leakage.pdf
+    python paper/make_tables.py   # -> paper/generated/{numbers,tables,realworld_*}.tex, paper/figures/*.pdf
 """
 
 import json
@@ -327,6 +328,192 @@ def ood_table():
     )
 
 
+# ── Real photos: apps v2.0.1 and v2.1.0 (section "From Benchmark to Phone Photos") ──
+def pct1(x):
+    """Fraction -> percent, one decimal."""
+    return f"{100 * x:.1f}"
+
+
+def realworld():
+    """Macros and the two tables of the phone-photo section.
+
+    Reads results/deploy_eval.json (research and v2.0.1 classifiers, each at its
+    95%-validation gate), results/deploy_eval_served.json (v2.0.1 and v2.1 at the
+    gates the app serves), results/detection_eval.json (whole-app methods),
+    results/detector_train.json, results/mobile_detector_metrics.json, the v2.1
+    run config and the training manifests of the detector and of v2.1. The
+    asserts pin the comparisons the prose states in words: if one fails, reread
+    sections/phone.tex, the abstract, conclusion and limitations.
+    """
+    rd = ROOT / "results"
+    val95 = json.loads((rd / "deploy_eval.json").read_text())
+    served = json.loads((rd / "deploy_eval_served.json").read_text())
+    det = json.loads((rd / "detection_eval.json").read_text())
+    dtr = json.loads((rd / "detector_train.json").read_text())
+    dev = json.loads((rd / "mobile_detector_metrics.json").read_text())
+    research, dep95 = val95["models"]["mnv3_mtl_s1"], val95["models"]["deploy_mnv3_v201"]
+    v1, v2 = served["models"]["deploy_mnv3_v201"], served["models"]["deploy_mnv3_v210"]
+    web, coco = det["web"]["methods"], det["coco"]
+    single = coco["single_type_scenes"]["methods"]
+    ood, cifar = det["ood_test"]["methods"], det["cifar"]["methods"]
+    cal, dcoco, oracle = det["calibration"]["detector"], coco["methods"]["detector"], coco["oracle_crops"]
+    apple = det["web"]["per_photo"]["user_apple.png"]
+
+    assert research["web"]["accepted_and_type_correct"] < 0.5  # "rejected or misnamed most"
+    assert all(apple[k]["n_accepted"] == 0 for k in ("v2.0.1", "whole")), "whole apple photo now accepted"
+    assert all(apple[k]["top_type"] == "apple" for k in ("prototype", "detector")), "apple crop not an apple"
+    assert (web["v2.0.1"]["top_item_type_correct"] < web["whole"]["top_item_type_correct"]
+            < web["detector"]["top_item_type_correct"])
+    assert v2["cifar"]["accept_rate"] < v1["cifar"]["accept_rate"]  # "fewer CIFAR-10 images passed"
+    assert all(v2[k]["accepted_and_type_correct"] > v1[k]["accepted_and_type_correct"]
+               for k in ("coco_crops", "web", "external"))  # "raised ... also helped"
+    assert single["detector"]["type_correct"] > single["v2.0.1"]["type_correct"]  # "rises"
+    assert cal["false_accept_if_crops_used_gate"] > cal["whole_photo_false_accept"]  # crops score higher
+    assert ood["detector"]["false_accept"] > cal["whole_photo_false_accept"]  # test above the matched rate
+    assert ood["detector"]["false_accept"] > ood["v2.0.1"]["false_accept"]  # "the cost shows up"
+    assert cifar["detector"]["false_accept"] < cifar["v2.0.1"]["false_accept"]  # "false accepts fall"
+    assert dcoco["large_supported"]["found"] > dcoco["medium_supported"]["found"]  # "but only ... medium"
+    assert dcoco["medium_supported"]["found"] < oracle["medium"]["type_correct"]  # medium: loss in detection
+
+    crops = Counter(r["source"] for r in json.loads((ROOT / "data/metadata_deploy_v210.json").read_text())["images"])
+    dimgs = [r for s in ("train", "val") for r in json.loads((ROOT / f"data/detection/{s}.json").read_text())["images"]]
+    assert len(dimgs) == dtr["n_train"] + dtr["n_val"]
+    run = json.loads((ROOT / "models/runs/deploy_mnv3_v210/run_config.json").read_text())
+    det_file = json.loads((ROOT / "mobile_app/assets/model/detector_meta.json").read_text())["onnx_file"]
+    onnx_mb = (ROOT / "mobile_app/assets/model" / det_file).stat().st_size / 1e6  # the shipped detector
+
+    out = ""
+    out += macro("WebN", str(v1["web"]["n"]))
+    out += macro("WebNDup", str(served["web_dropped_as_near_duplicates"]))
+    out += macro("WebNRaw", str(v1["web"]["n"] + served["web_dropped_as_near_duplicates"]))
+    out += macro("ResWebAccept", pct1(research["web"]["accept_rate"]))
+    out += macro("ResWebType", pct1(research["web"]["type_acc"]))
+    out += macro("ResWebAccCorr", pct1(research["web"]["accepted_and_type_correct"]))
+    out += macro("ResMainType", pct1(research["main_test"]["type_acc"]))
+    out += macro("ResFvType", pct1(research["fv_test"]["type_acc"]))
+    out += macro("ResVegType", pct1(research["veg_test"]["type_acc"]))
+    out += macro("ResGate", f"{research['threshold']:.2f}")
+    out += macro("DepValWebRej", pct1(1 - dep95["web"]["accept_rate"]))
+    out += macro("GateVone", f"{v1['threshold']:.1f}")
+    out += macro("GateVtwo", f"{v2['threshold']:.2f}")
+    out += macro("CocoCropsN", f"{v1['coco_crops']['n']:,}")
+    out += macro("VoneCocoCrops", pct1(v1["coco_crops"]["accepted_and_type_correct"]))
+    out += macro("VtwoCocoCrops", pct1(v2["coco_crops"]["accepted_and_type_correct"]))
+    out += macro("VtwoMain", pct1(v2["main_test"]["accepted_and_type_correct"]))
+    out += macro("CalN", f"{cal['n_photos']:,}")
+    out += macro("CalWhole", pct1(cal["whole_photo_false_accept"]))
+    out += macro("CalCropsAtWhole", pct1(cal["false_accept_if_crops_used_gate"]))
+    out += macro("ProtoThr", f"{det['gates']['prototype']['detector']:.2f}")
+    out += macro("ScanWebN", str(det["web"]["n"]))
+    for k, tag in [("v2.0.1", "Vone"), ("whole", "Whole"), ("detector", "Det")]:
+        out += macro(f"ScanWeb{tag}", pct1(web[k]["top_item_type_correct"]))
+    out += macro("ScanFreshDet", pct1(web["detector"]["freshness_acc_when_type_correct"]))
+    out += macro("ScanFreshDetN", str(web["detector"]["n_freshness"]))
+    out += macro("ScanSingleN", str(coco["single_type_scenes"]["n"]))
+    out += macro("ScanSingleVone", pct1(single["v2.0.1"]["type_correct"]))
+    out += macro("ScanSingleDet", pct1(single["detector"]["type_correct"]))
+    out += macro("ScanLargeFound", pct1(dcoco["large_supported"]["found"]))
+    out += macro("ScanMedFound", pct1(dcoco["medium_supported"]["found"]))
+    out += macro("ScanAp", pct1(dcoco["ap"]["AP50"]))
+    out += macro("OracleLarge", pct1(oracle["large"]["type_correct"]))
+    out += macro("OracleMed", pct1(oracle["medium"]["type_correct"]))
+    out += macro("ScanOodN", f"{det['ood_test']['n']:,}")
+    out += macro("ScanOodVone", pct1(ood["v2.0.1"]["false_accept"]))
+    out += macro("ScanOodDet", pct1(ood["detector"]["false_accept"]))
+    out += macro("ScanCifarVone", pct1(cifar["v2.0.1"]["false_accept"]))
+    out += macro("ScanCifarDet", pct1(cifar["detector"]["false_accept"]))
+    out += macro("DetInput", str(dtr["input_size"]))
+    out += macro("DetMaxItems", str(dtr["max_items"]))
+    out += macro("DetCropScale", f"{dtr['crop_scale']:.1f}")
+    out += macro("DetScore", f"{dtr['score_threshold']:.2f}")
+    out += macro("DetValP", f"{dtr['val_at_threshold']['precision']:.2f}")
+    out += macro("DetValR", f"{dtr['val_at_threshold']['recall']:.2f}")
+    out += macro("DetValApFifty", pct1(dtr["val_ap"]["AP50"]))
+    out += macro("DetBestEpoch", str(dtr["best_epoch"] + 1))  # the log counts epochs from 0
+    out += macro("DetEpochs", str(dtr["epochs"]))
+    out += macro("DetNTrain", f"{dtr['n_train']:,}")
+    out += macro("DetNVal", f"{dtr['n_val']:,}")
+    out += macro("DetNSynth", f"{sum(r.get('source') == 'composite' for r in dimgs):,}")
+    out += macro("DetOnnxMb", f"{onnx_mb:.1f}")
+    out += macro("ClfNCoco", f"{crops['coco_crop']:,}")
+    out += macro("ClfNSynth", f"{crops['composite_crop']:,}")
+    out += macro("ClfNCrops", f"{crops['coco_crop'] + crops['composite_crop']:,}")
+    out += macro("VtwoEpochs", str(run["epochs_trained"]))
+    out += macro("DevPhotos", str(dev["n_photos"]))
+    out += macro("DevItems", str(dev["n_items"]))
+    out += macro("DevBoxPx", f"{dev['max_box_diff_px']:.1f}")
+    for k, tag in [("decode", "Decode"), ("detect", "Detect"), ("classify_all_crops", "Crops")]:
+        out += macro(f"Dev{tag}Ms", f"{dev['median_ms'][k]:.0f}")
+    # Re-measured after model files were named by content hash: an earlier run reused a cached
+    # v2.0.1 classifier because flutter_onnxruntime reuses any same-named file in the temp dir.
+    par = json.loads((ROOT / "results/mobile_parity_v210.json").read_text())
+    assert dev["item_count_agreement"] == dev["type_agreement"] == dev["gate_agreement"] == 1.0
+    assert par["top1_agreement"]["produce_type"] == par["ood_gate_agreement"] == 1.0
+    out += macro("DevClfPhotos", str(par["n_images"]))
+    out += macro("DevClfFresh", pct1(par["top1_agreement"]["freshness"]))
+
+    # Table: classifiers at the gates the app used
+    rows = []
+    for label, k in [("Web photos", "web"), ("Fresh/rotten set, test", "fv_test"),
+                     ("Vegetable set, test", "veg_test"), ("Original grouped test", "main_test"),
+                     ("External set", "external"), ("COCO val2017 crops", "coco_crops")]:
+        cells = [pct1(m[k]["accepted_and_type_correct"]) if k in m else "--" for m in (research, v1, v2)]
+        rows.append(f"{label} ({v2[k]['n']:,}) & " + " & ".join(cells) + r" \\")
+    rows.append("\\midrule")
+    for label, k in [("Unsupported produce, test", "ood_real"), ("CIFAR-10", "cifar")]:
+        assert research[k]["n"] == v2[k]["n"]
+        rows.append(f"{label} ({v2[k]['n']:,}) & " + " & ".join(pct1(m[k]["accept_rate"]) for m in (research, v1, v2))
+                    + r" \\")
+    clf_table = (
+        "\\begin{table}[t]\n\\centering\n\\caption{Classifiers at the gates the app used: the research model "
+        "(shipped in v2.0.0) at its 95\\%-validation gate, \\ResGate{}; v2.0.1 at \\GateVone{}; v2.1 at "
+        "\\GateVtwo{}. Upper rows: accepted with the right type; lower rows: accepted, where lower is better "
+        "(\\%, $n$ in brackets). v2.0.1 and v2.1 train on the training splits of both real-world sets, v2.1 also "
+        "on COCO train2017 crops.}\n\\label{tab:clf}\n\\footnotesize\n\\setlength{\\tabcolsep}{4pt}\n"
+        "\\begin{tabular}{lccc}\n\\toprule\n"
+        "Test set & Research & v2.0.1 & v2.1 \\\\\n\\midrule\n"
+        + "\n".join(rows) + "\n\\bottomrule\n\\end{tabular}\n\\end{table}\n"
+    )
+
+    # Table: the whole app, four methods
+    methods = ("v2.0.1", "whole", "prototype", "detector")
+
+    def row(label, get, boxed_only=False):
+        cells = ["--" if boxed_only and k in ("v2.0.1", "whole") else pct1(get(k)) for k in methods]
+        return f"{label} & " + " & ".join(cells) + r" \\"
+
+    size = coco["n_supported_boxes"]
+    rows = [
+        "\\multicolumn{5}{l}{\\textit{Right type}} \\\\",
+        row(f"Web and user photos ({det['web']['n']})", lambda k: web[k]["top_item_type_correct"]),
+        row(f"COCO single-type scenes ({coco['single_type_scenes']['n']})",
+            lambda k: single[k]["type_correct"]),
+        f"\\multicolumn{{5}}{{l}}{{\\textit{{COCO val2017 fruit boxes ({coco['n_images']} scenes)}}}} \\\\",
+        row(f"Large ({size['large']}), found", lambda k: coco["methods"][k]["large_supported"]["found"], True),
+        row("\\quad found, right type",
+            lambda k: coco["methods"][k]["large_supported"]["found_and_type_correct"], True),
+        row(f"Medium ({size['medium']}), found", lambda k: coco["methods"][k]["medium_supported"]["found"], True),
+        row("\\quad found, right type",
+            lambda k: coco["methods"][k]["medium_supported"]["found_and_type_correct"], True),
+        row("AP50, all produce", lambda k: coco["methods"][k]["ap"]["AP50"], True),
+        f"\\multicolumn{{5}}{{l}}{{\\textit{{False accepts (lower is better)}}}} \\\\",
+        row(f"Unsupported produce ({det['ood_test']['n']:,})", lambda k: ood[k]["false_accept"]),
+        row(f"CIFAR-10 ({det['cifar']['n']:,})", lambda k: cifar[k]["false_accept"]),
+    ]
+    scan_table = (
+        "\\begin{table}[t]\n\\centering\n\\caption{The whole app on real photos (\\%). Right type: the best "
+        "accepted item in the photo has the right type. Found: a detection matches the banana, apple or orange "
+        "box one-to-one at IoU $\\geq$ 0.5. AP50 is class-agnostic. False accept: at least one item accepted. "
+        "COCO: the COCO-pretrained SSDlite, unchanged. $n$ in brackets.}\n\\label{tab:scan}\n\\footnotesize\n"
+        "\\setlength{\\tabcolsep}{3pt}\n\\begin{tabular}{lcccc}\n\\toprule\n"
+        " & \\multicolumn{2}{c}{Whole photo} & \\multicolumn{2}{c}{Detector + crops} \\\\\n"
+        "\\cmidrule(lr){2-3}\\cmidrule(lr){4-5}\n"
+        " & v2.0.1 & v2.1 & COCO & Ours \\\\\n\\midrule\n"
+        + "\n".join(rows) + "\n\\bottomrule\n\\end{tabular}\n\\end{table}\n"
+    )
+    return clf_table + scan_table, out
+
+
 # ── Figures: one IEEE column wide, Times-like font, legends outside the data ──
 COLUMN_IN = 3.45
 PALETTE = {"per_file": "#c0392b", "grouped": "#2471a3", "session": "#e1a100"}
@@ -494,8 +681,15 @@ if __name__ == "__main__":
         + macro("AppRamPeak", f"{mob['peak_rss_mb']:.0f}")
         + macro("AppScanKb", f"{mob['storage_per_scan_kb_mean']:.0f}")
     )
+    rw_tables, rw_macros = realworld()
+    (OUT / "realworld_numbers.tex").write_text(
+        "% Generated by paper/make_tables.py from results/{deploy_eval,deploy_eval_served,detection_eval,"
+        "detector_train,mobile_detector_metrics}.json - do not edit\n" + rw_macros
+    )
+    (OUT / "realworld_tables.tex").write_text("% Generated by paper/make_tables.py - do not edit\n" + rw_tables)
     FIG.mkdir(parents=True, exist_ok=True)
     leakage_figure()
     session_figure()
     ood_figure()
-    print(f"wrote {OUT / 'numbers.tex'}, {OUT / 'tables.tex'}, figures leakage/sessions/ood.pdf")
+    print(f"wrote {OUT / 'numbers.tex'}, {OUT / 'tables.tex'}, {OUT / 'realworld_*.tex'}, "
+          "figures leakage/sessions/ood.pdf")

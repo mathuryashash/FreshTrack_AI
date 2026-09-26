@@ -1,0 +1,15 @@
+{
+ "build_mode": "profile",
+ "n_photos": 5,
+ "n_items": 14,
+ "item_count_agreement": 1.0,
+ "type_agreement": 1.0,
+ "gate_agreement": 1.0,
+ "max_box_diff_px": 0.81658935546875,
+ "max_score_diff": 0.008152484893798828,
+ "median_ms": {
+  "decode": 224.395,
+  "detect": 46.05,
+  "classify_all_crops": 92.473
+ }
+}

@@ -1,5 +1,6 @@
 % FreshTrack: IEEE conference paper (IEEEtran, conference mode).
 % Build:  python paper/make_tables.py  &&  cd paper && latexmk -pdf freshtrack_ieee.tex
+% (figures/scan.pdf: python paper/make_scan_figure.py, from the repo root)
 % Every number is a macro from generated/numbers.tex or a table from
 % generated/tables.tex; do not type results by hand.
 \documentclass[conference]{IEEEtran}
@@ -13,6 +14,7 @@
 
 \input{generated/numbers.tex}
 \IfFileExists{generated/app_numbers.tex}{\input{generated/app_numbers.tex}}{}
+\input{generated/realworld_numbers.tex}
 
 \begin{document}
 
@@ -83,7 +85,9 @@ MobileNetV3-Large~\cite{howard2019mobilenetv3}, over three seeds.
 photos of unsupported produce and of things that are not produce at all.
 \item An Android app that runs the model entirely on the phone and shows
 quality grade and remaining shelf life, which no available dataset annotates,
-only as clearly labelled estimates.
+only as clearly labelled estimates. When it failed on real photos, we added a
+deployment model and a two-stage scan that detects each item and classifies a
+crop around it (Section~\ref{sec:phone}).
 \end{enumerate}
 
 %===========================================================================
@@ -228,6 +232,10 @@ and Albumentations 2.0.8. Code, splits and per-run logs are available at
 %===========================================================================
 \section{Deployment}
 \IfFileExists{sections/deployment.tex}{\input{sections/deployment.tex}}{}
+
+%===========================================================================
+\section{From Benchmark to Phone Photos}\label{sec:phone}
+\input{sections/phone.tex}
 
 %===========================================================================
 \section{Limitations}

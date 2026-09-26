@@ -54,17 +54,26 @@ python paper/make_tables.py              # LaTeX macros/tables/figure from resul
 
 ## Serve a model
 
-The served model is the deployment model `deploy_mnv3_v201` (trained on the original
-data plus real-world photos, gate threshold 5.0), not the research model reported in
-the paper. See DECISIONS.md §0.1.
+The app (v2.1) scans in two stages: a small detector finds each fruit or vegetable,
+then the classifier checks a crop around each one (DECISIONS.md §0.2). The served
+classifier is `deploy_mnv3_v210`, not the research model reported in the paper
+(DECISIONS.md §0.1–0.2). The API still classifies the whole photo.
 
 ```bash
+# classifier: v2.0.1 deployment model, then v2.1 fine-tuned on crops of real scenes
 python -m src.training.train --name deploy_mnv3_v201 --metadata data/metadata_deploy.json \
   --strong_aug --backbone mobilenetv3_large_100 --epochs 12 --num_workers 2
-cp models/runs/deploy_mnv3_v201/best.ckpt      models/checkpoints/freshtrack_v2.ckpt
-# served meta (labels, preprocessing, ood_threshold 5.0 from DECISIONS.md §0.1) is tracked with the app
-cp mobile_app/assets/model/model_meta.json     models/checkpoints/model_meta.json
-python -m src.training.export_onnx       # refresh the Android app's bundled model
+python -m src.detection.data coco          # then: autolabel, cutouts, composite, build, clfcrops
+python -m src.training.train --name deploy_mnv3_v210 --metadata data/metadata_deploy_v210.json \
+  --strong_aug --epochs 8 --lr 1e-4 --num_workers 2 --init_from models/runs/deploy_mnv3_v201/best.ckpt
+python -m src.training.gate_sweep models/runs/deploy_mnv3_v210 --match models/runs/deploy_mnv3_v201
+cp models/runs/deploy_mnv3_v210/best.ckpt       models/checkpoints/freshtrack_v2.ckpt
+cp models/runs/deploy_mnv3_v210/model_meta.json models/checkpoints/model_meta.json
+python -m src.training.export_onnx         # classifier -> Android app
+# detector: train, calibrate the crop gate and evaluate everything, export
+python -m src.detection.train
+python -m src.detection.evaluate           # -> results/detection_eval.json
+python -m src.detection.export             # detector -> Android app
 uvicorn src.api.main:app --host 0.0.0.0 --port 8000
 streamlit run src/app.py
 ```

@@ -5,6 +5,12 @@ unsupported produce (metadata_deploy_ood.json, all splits), CIFAR-10.
 Scores are saved to results/<run>_energies.npz.
 
     python -m src.training.gate_sweep models/runs/deploy_mnv3_v201
+
+--match sets a new model's gate to accept unsupported produce (OOD val half,
+validation data only) exactly as often as a reference model does at its served
+gate, and writes the new run's model_meta.json:
+
+    python -m src.training.gate_sweep models/runs/deploy_mnv3_v210 --match models/runs/deploy_mnv3_v201
 """
 
 import json
@@ -42,5 +48,40 @@ def main(run_dir):
         print(f"{t:9.2f}  " + "  ".join(f"{(e[k] >= t).mean():11.3f}" for k in e))
 
 
+N_MATCH = 3000
+
+
+def _load(run, device):
+    cfg = json.loads((run / "run_config.json").read_text())
+    model = FreshTrackModel.load_from_checkpoint(cfg["best_checkpoint"], pretrained=False, weights_only=True)
+    return cfg, model.to(device).eval()
+
+
+def match(run_dir, ref_dir):
+    run, ref = Path(run_dir), Path(ref_dir)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    ood = [r["image_path"] for r in json.loads(Path("data/metadata_deploy_ood.json").read_text())["images"]
+           if r["split"] == "val"]
+    photos = [ood[i] for i in np.random.default_rng(5).permutation(len(ood))[:N_MATCH]]
+    ref_meta = json.loads((ref / "model_meta.json").read_text())
+    _, ref_model = _load(ref, device)
+    rate = float((energy_score(predict(ref_model, photos, device)["produce_type"]).numpy()
+                  >= ref_meta["ood_threshold"]).mean())
+    cfg, model = _load(run, device)
+    e = energy_score(predict(model, photos, device)["produce_type"]).numpy()
+    t = float(np.quantile(e, 1 - rate))
+    check = float((e >= t).mean())
+    meta = {**ref_meta, "ood_threshold": t, "run": cfg["run_name"], "metadata_sha256": cfg["metadata_sha256"],
+            "git_sha": cfg["git_sha"],
+            "ood_threshold_basis": f"matched to {ref.name} at {ref_meta['ood_threshold']:.3f}: it accepts "
+                                   f"{rate:.1%} and this model {check:.1%} of {len(photos)} "
+                                   f"unsupported-produce photos (OOD val half)"}
+    (run / "model_meta.json").write_text(json.dumps(meta, indent=2))
+    print(json.dumps({"reference_false_accept": rate, "threshold": t, "check": check}))
+
+
 if __name__ == "__main__":
-    main(sys.argv[1])
+    if "--match" in sys.argv:
+        match(sys.argv[1], sys.argv[sys.argv.index("--match") + 1])
+    else:
+        main(sys.argv[1])

@@ -1,4 +1,6 @@
-The app runs the model entirely on the phone, so photos never leave the device
+This section describes the first release (v2.0.0), which ran the research
+MobileNetV3-Large; Section~\ref{sec:phone} covers what changed after it met real
+photos. The app runs the model entirely on the phone, so photos never leave the device
 and no network connection is needed; the release build does not even request
 internet access. We export the deployed MobileNetV3-Large to ONNX in 32-bit
 floating point (\AppModelMb{}\,MB) and run it with ONNX Runtime inside a Flutter

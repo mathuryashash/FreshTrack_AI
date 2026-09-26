@@ -62,7 +62,29 @@ def _metrics(model, items, device, threshold):
     return out
 
 
-def main(run_dirs):
+def _coco_crops():
+    """Square crops (as the app cuts them) around COCO val2017 human boxes of the
+    supported types, at least 32 px on each side: the held-out real-scene crop test."""
+    import cv2
+
+    from src.detection.data import MIN_SIDE
+    from src.detection.detector import crop_box
+
+    out = []
+    for r in json.loads(Path("data/detection/coco_val_test.json").read_text())["images"]:
+        rgb = None
+        for b, label in zip(r["boxes"], r["labels"]):
+            if label in ("banana", "apple", "orange") and min(b[2] - b[0], b[3] - b[1]) >= MIN_SIDE:
+                rgb = cv2.cvtColor(cv2.imread(r["image_path"]), cv2.COLOR_BGR2RGB) if rgb is None else rgb
+                x1, y1, x2, y2 = crop_box(b, r["width"], r["height"])
+                out.append({"image_path": np.ascontiguousarray(rgb[y1:y2, x1:x2]), "produce_type": label,
+                            "freshness": None})
+    return out
+
+
+def main(run_dirs, served_gates=False):
+    """served_gates: judge each run at the gate in its own model_meta.json (the
+    served app's) instead of the 95%-val quantile; also scores held-out COCO crops."""
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     deploy = json.loads(DEPLOY.read_text())["images"]
     ood = json.loads(DEPLOY_OOD.read_text())["images"]
@@ -78,13 +100,15 @@ def main(run_dirs):
         "ood_real": [r["image_path"] for r in ood if r["split"] == "test"],
         "cifar": load_cifar_far_ood(),
     }
+    if served_gates:
+        sets["coco_crops"] = _coco_crops()
     val_id = [r["image_path"] for r in deploy if r["split"] == "val"]
     report = {"web_dropped_as_near_duplicates": n_dup, "models": {}}
     for run in map(Path, run_dirs):
         cfg = json.loads((run / "run_config.json").read_text())
         model = FreshTrackModel.load_from_checkpoint(cfg["best_checkpoint"], pretrained=False, weights_only=True)
         model.to(device).eval()
-        if cfg["metadata"].endswith("metadata_deploy.json"):
+        if cfg["metadata"].endswith("metadata_deploy.json") and not served_gates:
             val_energy = energy_score(predict(model, val_id, device)["produce_type"]).numpy()
             threshold = float(np.quantile(val_energy, 0.05))
         else:
@@ -97,8 +121,10 @@ def main(run_dirs):
         for name in sets:
             print(f"  {name:10s} " + "  ".join(f"{k}={v:.3f}" if isinstance(v, float) else f"{k}={v}"
                                                for k, v in res[name].items()))
-    Path("results/deploy_eval.json").write_text(json.dumps(report, indent=2))
+    out = "results/deploy_eval_served.json" if served_gates else "results/deploy_eval.json"
+    Path(out).write_text(json.dumps(report, indent=2))
 
 
 if __name__ == "__main__":
-    main(sys.argv[1:])
+    served = "--served-gates" in sys.argv
+    main([a for a in sys.argv[1:] if a != "--served-gates"], served_gates=served)

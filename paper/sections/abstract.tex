@@ -17,7 +17,12 @@ of freshness and produce type performs on par with separate models, and a
 multi-task MobileNetV3-Large reaches \MnvFreshAcc\% freshness accuracy in
 \MnvCpuMs\,ms on a laptop CPU. An energy-score gate on its produce-type head
 rejects \MnvGateFarOODRejectRate\% of non-produce images but only
-\MnvGateNearOODRejectRate\% of unsupported produce. We release the splits, code
+\MnvGateNearOODRejectRate\% of unsupported produce. On real phone photos the
+research model did worse still: it accepted and correctly named only
+\ResWebAccCorr\% of \WebN{} web photos. A retrained model with a two-stage scan,
+which detects each item and classifies a square crop around it, names the right
+type in \ScanWebDet\% of web and user photos.
+We release the splits, code
 and an Android app that runs the model offline, and we argue that shelf life
 and quality grade, for which these datasets hold no ground truth, should not be
 presented as learned outputs.

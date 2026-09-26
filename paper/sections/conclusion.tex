@@ -6,6 +6,10 @@ stale produce came from different sources, and neither per-image nor per-photo
 splits can show it. On the photo-grouped split, one multi-task
 MobileNetV3-Large recognises produce type and freshness as well as separate
 EfficientNet-B0 models at lower cost, runs offline on a phone, and rejects most
-images that are not produce. The next step is data rather than architecture.
+images that are not produce. Real phone photos repeated the lesson of the
+capture sessions: the research model rejected or misnamed most of them.
+Retraining on real-world photos and classifying a crop around each detected
+item closed much of that gap, but the app still accepts unsupported produce in
+\ScanOodDet\% of test photos. The next step is data rather than architecture.
 Photographs from many sessions, places and devices, taken until the produce
 spoils, are needed before shelf life can be predicted from RGB images at all.
