@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-FreshTrack AI — produce freshness assessment using multi-task deep learning (EfficientNet-B0 backbone). Learned tasks: freshness (Fresh/Stale) and produce type (6 classes). Quality grade and shelf life are heuristics derived from P(fresh) and are flagged as such in the API. See DECISIONS.md §0.
+FreshTrack AI — produce freshness assessment using multi-task deep learning (timm backbone: EfficientNet-B0 by default, MobileNetV3-Large for the paper's chosen model and the app). Learned tasks: freshness (Fresh/Stale) and produce type (6 classes: apple, banana, bitter gourd, capsicum, orange, tomato). Quality grade and shelf life are heuristics derived from P(fresh) and are flagged as such in the API. See DECISIONS.md §0.
+
+The Android app (v2.1) runs offline in two stages: an SSDlite detector finds each item, then the classifier checks a square crop around it (DECISIONS.md §0.2). The served classifier is `deploy_mnv3_v210`, not the research model in the paper (§0.1–0.2).
 
 ## Commands
 
@@ -30,22 +32,18 @@ docker build -t freshtrack-api .
 ### Mobile App (Flutter)
 
 ```bash
+# Export both models into the app (writes content-named .onnx files + metadata + parity fixtures)
+python -m src.training.export_onnx
+python -m src.detection.export
+
 cd mobile_app
-
-# Install dependencies
 flutter pub get
-
-# Run on device/emulator
-flutter run
-
-# Build APK
-flutter build apk
-
-# Run tests
-flutter test
+flutter analyze && flutter test                  # unit + widget tests
+flutter test integration_test/detector_parity_test.dart -d emulator-5554   # on-device parity
+flutter build apk --release --split-per-abi
 ```
 
-### Dataset & Training
+### Research results (paper)
 
 ```bash
 # Build leakage-free grouped splits (needs data/downloads/ Kaggle folders)
@@ -60,16 +58,20 @@ python -m src.training.run_experiment    # -> models/runs/*, results/summary.{js
 # Evaluate specific runs (writes metrics.json + model_meta.json)
 python -m src.training.evaluate models/runs/b0_mtl_s0
 
-# Promote a run for serving
-cp models/runs/mnv3_mtl_s1/best.ckpt models/checkpoints/freshtrack_v2.ckpt
-cp models/runs/mnv3_mtl_s1/model_meta.json models/checkpoints/model_meta.json
+# Paper numbers, tables and figures (never type results by hand)
+python paper/make_tables.py
 ```
+
+### Deployment models (app)
+
+The full sequence (deploy classifier, detector data stages, detector training, gate calibration, export) is in README.md "Serve a model". `src.training.evaluate` cannot read the deploy metadata; use `src.training.evaluate_deploy` and `src.training.gate_sweep`.
 
 ## Architecture
 
 ### Backend Stack
 - **Framework**: FastAPI with rate limiting (slowapi), API key auth, CORS
-- **Model**: PyTorch Lightning module (`src/models/freshtrack_model.py`), timm backbone (deployed: MobileNetV3-Large; EfficientNet-B0 also supported)
+- **Model**: PyTorch Lightning module (`src/models/freshtrack_model.py`), timm backbone
+- **Detector**: `src/detection/` — torchvision SSDlite320-MobileNetV3, one "produce" class; `detector.py` is the reference pipeline the Dart code mirrors
 - **Database**: SQLite (`src/api/database.py`) for prediction logging and feedback collection
 - **Config**: Centralized in `src/config.py` with environment variable overrides
 
@@ -83,33 +85,39 @@ cp models/runs/mnv3_mtl_s1/model_meta.json models/checkpoints/model_meta.json
 | GET | `/history` | API Key | Recent predictions |
 | GET | `/stats` | API Key | Aggregate statistics |
 
+The API classifies the whole photo; only the app uses the detector.
+
 ### Mobile App Structure
 ```
 mobile_app/lib/
-├── main.dart              # App entry, theme, bottom nav shell
+├── main.dart                # App entry, theme, bottom nav shell
 ├── screens/
-│   ├── home_screen.dart   # Camera capture + prediction display
-│   ├── history_screen.dart # Local SQLite prediction history
-│   └── settings_screen.dart # API URL/key configuration
+│   ├── home_screen.dart     # Capture/pick photo, boxes + item list, Select area
+│   ├── result_screen.dart   # Details for one item
+│   ├── history_screen.dart  # Local SQLite scan history
+│   └── settings_screen.dart # About + Clear history (nothing to configure)
 ├── services/
-│   ├── api_service.dart   # HTTP client with retry logic, image compression
-│   └── database_service.dart # Local SQLite for offline history
+│   ├── classifier.dart      # ONNX Runtime sessions (detector + classifier), analyse()
+│   ├── pipeline.dart        # Pure-Dart pre/post-processing, mirrors src/detection/detector.py
+│   └── database_service.dart # Local SQLite history
 ├── models/
 │   └── prediction_result.dart
 └── widgets/
+    ├── scan_view.dart       # Photo with tappable boxes, drag-to-select
     ├── freshness_badge.dart
     └── result_card.dart
 ```
 
 ### Data Flow
 1. **Training**: Metadata JSON → `FruitDataset` (Albumentations transforms) → `FreshTrackModel` (multi-task heads) → PyTorch Lightning trainer
-2. **Inference**: Image upload → API validates → model predicts → SQLite log → JSON response
-3. **Mobile**: Camera/gallery → compress → POST /predict → display results → cache locally
+2. **Inference (API)**: Image upload → API validates → model predicts → SQLite log → JSON response
+3. **Mobile**: Camera/gallery → detector (≤ 8 boxes) → square crop per box → classifier + crop OOD gate → results + history. No detection → whole photo with the whole-photo gate.
 
 ### Key Configuration
-- `src/config.py`: Freshness/quality label mappings, loss weights, image settings
-- `.env`: `API_KEY`, `MODEL_CHECKPOINT`, `DATABASE_URL`, `CORS_ORIGINS`
-- `mobile_app/pubspec.yaml`: Flutter dependencies (http, sqflite, image_picker)
+- `src/config.py`: label mappings, loss weights, image settings, paths
+- `.env`: `API_KEY`, `MODEL_CHECKPOINT`, `MODEL_META`, `DATABASE_URL`, `CORS_ORIGINS`
+- `mobile_app/assets/model/`: `model_meta.json` (classifier, whole-photo gate), `detector_meta.json` (score threshold, crop gate)
+- `mobile_app/pubspec.yaml`: flutter_onnxruntime, image, image_picker, sqflite
 
 ## Environment Variables
 
@@ -126,4 +134,6 @@ CORS_ORIGINS=http://localhost:8501,http://localhost:3000
 
 - API tests use `TestClient` with mocked DB calls (`monkeypatch`)
 - Tests validate: content-type, file extension, size limits, image magic bytes
-- Run: `pytest tests/test_api.py -v` or `pytest tests/test_model.py -v`
+- Run: `pytest tests/test_api.py -v`, `pytest tests/test_model.py -v`, `pytest tests/test_detection.py -v`
+- ONNX files in the app must keep content-hashed names (the export scripts do this): flutter_onnxruntime reuses any cached file with the same name, so an update would keep the old model.
+- Windows: run one GPU training at a time with `--num_workers 2` or less, or commit memory runs out.

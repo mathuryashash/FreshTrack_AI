@@ -226,17 +226,7 @@ adb shell am start -W -n in.rvitm.freshtrack/.MainActivity
 3. Ran 3 scans. All three completed: fresh apple, stale apple, and the not-produce popup for a UI screenshot. History and About also rendered.
 4. Turned networking back on afterwards.
 
-The screenshots below were taken in this offline state; the status bar has no Wi-Fi icon.
-
-### Screenshots
-
-- `mobile_app/screenshots/ondevice_fresh.png`: fresh apple, High (A), 10.0 days (est.)
-- `mobile_app/screenshots/ondevice_stale.png`: stale apple, Low (C), 0.0 days (est.)
-- `mobile_app/screenshots/ondevice_not_produce.png`: the OOD popup
-- `mobile_app/screenshots/ondevice_history.png`
-- `mobile_app/screenshots/ondevice_about.png`: About + Clear history, with the model version and load time
-
-The older `01`–`10` screenshots show the server-era Settings screen and are now outdated.
+The v2.0.0 screenshots taken in this offline state (`mobile_app/screenshots/ondevice_*.png`) have been replaced by v2.1.0 screenshots. The old ones are in git history (commit `81d1394` and earlier).
 
 ## Builds and APK sizes
 

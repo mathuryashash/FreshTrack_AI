@@ -8,12 +8,13 @@ Produce freshness assessment from a single photo, using multi-task deep learning
 
 ## Architecture
 
-- Backbone: EfficientNet-B0 (ImageNet-pretrained, via timm), with MobileNetV3-Large as an alternative
+- Backbone: EfficientNet-B0 by default, or MobileNetV3-Large (ImageNet-pretrained, via timm). The paper's chosen model and the app use MobileNetV3-Large.
 - Heads: freshness (2 classes) and produce type (6 classes), trained with an equal-weight cross-entropy loss
-- OOD gate: energy score on the produce-type head, thresholded at 95% validation TPR (stored in `model_meta.json`)
+- OOD gate: energy score on the produce-type head, thresholded at 95% validation TPR (stored in `model_meta.json`). The app's gates are set differently (DECISIONS.md §0.1–0.2).
+- Detector (app v2.1): SSDlite320-MobileNetV3 with one "produce" class (`src/detection/`)
 - Training: PyTorch Lightning, mixed precision, warmup + cosine LR, early stopping, CSV logs per run
 - API: FastAPI with rate limiting, API key auth, input validation and SQLite logging
-- Frontends: Streamlit (with Grad-CAM) and a Flutter mobile app (`mobile_app/`)
+- Frontends: Streamlit (with Grad-CAM) and an offline Flutter app (`mobile_app/`)
 
 ## Project Structure
 
@@ -25,9 +26,12 @@ src/
 ├── training/train.py      # one run -> models/runs/<name>/
 ├── training/evaluate.py   # metrics.json + model_meta.json per run
 ├── training/run_experiment.py  # full matrix + baseline -> results/
+├── training/export_onnx.py     # classifier -> mobile_app/assets/model/
+├── detection/             # produce detector: data, train, evaluate, export
 ├── api/                   # FastAPI inference server
 ├── app.py                 # Streamlit frontend
 └── config.py              # labels, heuristics, paths
+mobile_app/                # Flutter Android app, runs both models on the phone
 paper/                     # IEEE paper; numbers are generated from results/
 tests/                     # pytest suite
 ```
@@ -88,19 +92,20 @@ docker run -p 8000:8000 --env-file .env \
 
 ## Mobile App (Flutter, `mobile_app/`)
 
-Android package `in.rvitm.freshtrack`. It runs the model on the phone with ONNX Runtime, so it needs no server and no internet (the release build does not request the INTERNET permission). Scan history, with copies of the images, is kept in a local SQLite database.
+Android package `in.rvitm.freshtrack`. It runs the detector and the classifier on the phone with ONNX Runtime, so it needs no server and no internet (the release build does not request the INTERNET permission). Scan history, with a crop of each item, is kept in a local SQLite database.
 
 ```bash
-python -m src.training.export_onnx      # model + metadata + parity fixture -> mobile_app/
+python -m src.training.export_onnx      # classifier + metadata + parity fixture -> mobile_app/
+python -m src.detection.export          # detector + metadata + parity fixtures -> mobile_app/
 cd mobile_app
 flutter pub get
-flutter analyze && flutter test         # 34 tests
-flutter build apk --release --split-per-abi   # arm64 APK ~52 MB
+flutter analyze && flutter test         # 52 tests
+flutter build apk --release --split-per-abi   # arm64 APK ~60 MB
 ```
 
 - **Measurements** (APK size, RAM, cold start, latency, parity with PyTorch): see `docs/mobile_on_device_report.md` and `results/mobile_metrics.json`.
 - **Release signing**: put `storeFile`, `storePassword`, `keyAlias` and `keyPassword` in `android/key.properties`. Without that file, release builds fall back to the debug key. `key.properties` and `*.jks` are gitignored.
-- **Screenshots**: `mobile_app/screenshots/ondevice_*.png`, taken with networking switched off.
+- **Screenshots**: `mobile_app/screenshots/` (v2.1.0, Android emulator, networking switched off).
 
 ## API Endpoints
 

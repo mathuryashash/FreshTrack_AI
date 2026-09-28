@@ -30,6 +30,7 @@ scripts/
 
 # Internal agent/AI assistant files
 .agents/
+.claude/
 .serena/
 .mcp.json
 
@@ -47,9 +48,6 @@ results/*_log.txt
 # Local-only scripts and internal docs
 cleanup_root.py
 download_skills.py
-freshtrack_ai_prd.md
-freshtrack_workflow.md
-freshtrack_workflow.md
 progress.txt
 run_backend.bat
 run_mobile_app.bat
